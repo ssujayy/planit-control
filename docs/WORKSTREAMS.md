@@ -1,29 +1,45 @@
 # Team ownership and next actions
 
-Assign actual names before editing the same files. Owners are proposed roles, not assigned people.
+Role letters follow the latest human assignment (October 17, 2026). This session
+is explicitly assigned A; actual human names for the other roles are not known.
+Record actual coordination only in each owner's own docs/coordination log.
 
 | Owner | Files and responsibility | Next acceptance check |
 |---|---|---|
-| A Frontend | frontend/src; site list/map/detail and shared UI state | Select a plant and see real weather, with source and units |
-| B Backend and data | backend/db.py, schema, seed, ingestion, shared deployment | Seed Tiger Data and see the same records via database mode |
-| C Alerts and crew workflow | New alerts/reports/briefings modules; worker | Persistent lightning event processing and photo upload |
-| D ML | New ml/ folder; NOAA/weather joins and model evaluation | Five counties and one year with verified positive and negative rows |
+| A Backend integration | backend/db.py, migrations, shared routes, seed, ingestion and worker registration | 55 database-backed plants, cached weather/NWS monitoring, evidence ranking and shared B/C repositories; see docs/BACKEND_HANDOFF.md |
+| B Alerts and crew workflow | Lightning, reports and briefing behavior; register jobs with A's worker | Persistent isolated lightning processing, shared photo reports and site-local 18:00 briefings |
+| C ML | Historical data, training, evaluation and inference; register jobs with A's worker | Verified historical dataset, saved model/evaluation and actual predictions |
+| D Frontend | frontend/src; Shift Outlook state, components, styling and visualization; preserve map | Attention queue, site-by-time matrix and selected-site evidence timeline with honest missing states |
 
 ## What is already scaffolded
 
-React/Vite, Flask factory, initial PostgreSQL schema and seed command, 55 deduplicated EIA plants, map and keyboard-accessible list, live weather endpoint and a short-lived cache. The frontend clearly defaults to demo file storage; Tiger Data mode is explicit. Source headers and retrieval notes are included.
+React/Vite, Flask factory, PostgreSQL schema and additive migrations, 55
+deduplicated EIA plants, map/list and manual weather endpoint. A verified the
+configured Tiger Data connection, 55 database-backed plants, 55 persisted live
+weather snapshots and fresh official NWS monitoring for all 55 in a fresh process.
+GET /api/outlook composes and ranks stored evidence without provider calls.
+The worker runs weather/NWS rotations and accepts explicit B/C job factories.
+Migration 002 supplies lightning, photo/report, briefing and prediction storage;
+storage does not implement the B/C business workflows. The frontend defaults to demo file storage
+and has not yet been connected to the new Outlook route. See A's log for exact
+verification, interfaces and limitations.
 
 ## What is not built
 
-No completed Tiger Data connection, historical training dataset, trained model, risk classification, alert ingestion, lightning processing, report uploads, briefing scheduler, Gemini integration, authentication or public deployment. Do not present placeholders as features.
+No historical training dataset, trained model, verified live strike ingestion,
+10-mile strike processing, report upload APIs, briefing scheduler,
+Gemini integration, authentication or public deployment is implemented here.
+NWS flood/fire-weather monitoring does not provide river gauges/proximity or
+active-fire detections. Storage and evidence ranking do not complete these requirements. Do not present placeholders
+as features. No persistent worker was left running by A's bounded checks.
 
-## First shared integration milestone
+## Next shared integration milestone
 
-1. Copy `.env.example` to `.env`; the account owner enters the Tiger Data URI locally.
-2. Run the schema/seed command in the README.
-3. Confirm health reports connected AND database-mode `/api/sites` returns 55 plants.
-4. Select Tiger Data database in the UI and fetch weather for one site.
-5. Commit the working state without `.env` and split module ownership.
+1. D consumes the ranked Outlook and site-evidence responses for the attention queue, site-by-time matrix and timeline.
+2. B connects validated strike processing, shared photo upload/history and local 18:00 scheduling to A's repositories; propose additive schema/interface changes to A if needed.
+3. C supplies actual trained predictions/evaluation using save_prediction, plus a bounded inference job factory.
+4. A integrates B/C jobs and feed coverage; D presents missing coverage independently of hazard state.
+5. Register B/C factories in one worker, verify live/replay isolation and scheduled delivery, and run an integrated clean-clone check. Commit only when the human authorizes it.
 
 Ask the Sperry mentor about accessible strike data, acceptable replay, briefing delivery, and county-level ML scope while the rest of the team builds.
 
