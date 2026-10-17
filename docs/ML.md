@@ -63,6 +63,11 @@ Choose a threshold by validation F1 over a predeclared fixed grid. Final test
 reports average precision, precision/recall, ROC-AUC where defined, and constant/
 always-negative baselines. Training refuses splits missing either class.
 
+That 2024 evaluation has now been inspected. Subsequent model comparisons label
+2024 as development comparison rather than a fresh untouched test. The separate
+bounded tree experiment in `ml/experiments/gbt_v1/REPORT.md` retains this logistic
+artifact as the application default; its selection uses only 2022–2023.
+
 Features: temperature_2m_max (Celsius), precipitation_sum (mm/day),
 wind_gusts_10m_max (km/h), and seasonal sine/cosine derived from target date.
 Inference rejects missing/nonfinite daily inputs even though training has an

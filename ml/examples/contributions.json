@@ -1,0 +1,52 @@
+{
+  "status": "available",
+  "model_index": 0.21,
+  "probability": 0.021059018632974606,
+  "target_date": "2026-10-18",
+  "model_version": "county-weather-logreg-277e4566fcdb",
+  "feature_version": "daily-weather-v1",
+  "computed_at": "2026-10-17T23:07:28.659270+00:00",
+  "outside_training_range": [],
+  "note": "Experimental selected reported-event index; not injury probability or safety clearance.",
+  "model_contributions": {
+    "label": "model contributions",
+    "units": "model log-odds",
+    "intercept": -4.98568779481381,
+    "features": [
+      {
+        "feature": "temperature_2m_max",
+        "value": 30.0,
+        "transformed_value": 0.642280654197838,
+        "contribution": 0.6777153248055549
+      },
+      {
+        "feature": "precipitation_sum",
+        "value": 10.0,
+        "transformed_value": 0.7252105763999758,
+        "contribution": 0.33543593280575607
+      },
+      {
+        "feature": "wind_gusts_10m_max",
+        "value": 50.0,
+        "transformed_value": 1.3293862765644153,
+        "contribution": 0.7315716942359458
+      },
+      {
+        "feature": "season_sin",
+        "value": -0.9620675724981452,
+        "transformed_value": -1.3601137967363732,
+        "contribution": -0.5257241632086208
+      },
+      {
+        "feature": "season_cos",
+        "value": 0.27281126433401914,
+        "transformed_value": 0.38691466939202124,
+        "contribution": -0.07245344293247404
+      }
+    ],
+    "decision_function": -3.8391424491076482,
+    "reconstructed_log_odds": -3.839142449107648,
+    "reconstructed_probability": 0.021059018632974616,
+    "note": "Signed contributions are relative to the model intercept; not causal effects or percentage-point changes."
+  }
+}
