@@ -1,11 +1,14 @@
 # PlanIT Control
 
-SwampHacks XII starter for a utility-site environmental safety platform. Stack: React/Vite, Flask, Tiger Data PostgreSQL, and a separately started Python ingestion worker. Historical ML remains a separate unfinished workstream.
+SwampHacks XII starter for a utility-site environmental safety platform. Stack: React/Vite, Flask, Tiger Data PostgreSQL, a separately started Python ingestion worker, and a saved historical ML baseline.
 
 **Integration in progress.** The backend persists weather and NWS official
 warnings for 55 plants, composes a stored evidence-ranked Outlook, and supplies
 repositories for B/C workflows. Live strike ingestion, report upload APIs,
-briefing scheduling and a trained model remain unfinished. See
+briefing scheduling and automatic model-prediction persistence remain unfinished.
+The saved model, evaluation, optional model contributions and offline tree
+comparison are included; the logistic model remains the application default.
+See [the integration handoff](docs/INTEGRATION_BACKEND_ML.md),
 [the short backend handoff](docs/BACKEND_HANDOFF.md) and docs/WORKSTREAMS.md.
 
 ## Run locally
@@ -19,7 +22,7 @@ python -m venv .venv
 # macOS / Linux
 source .venv/bin/activate
 # Windows PowerShell instead: .venv\Scripts\Activate.ps1
-python -m pip install -r requirements-dev.txt
+python -m pip install -r requirements-dev.txt -r ml/requirements.txt
 python -m flask --app backend.app:create_app run --port 5000
 ```
 
@@ -142,7 +145,10 @@ seeding, snapshot/event deduplication, replay filtering, shared photo bytes,
 local-day briefing uniqueness, prediction provenance and advisory locking without
 changing application records. The role needs permission to create a schema.
 They do not verify a live strike feed, image upload validation, scheduled
-delivery, training/evaluation or the connected frontend.
+delivery or the connected frontend. The default suite also checks the saved ML
+artifact, inference failure states and model contributions. Full historical
+dataset and tree-result reproduction require the ignored prepared data; see
+docs/ML.md and ml/experiments/gbt_v1/REPORT.md.
 
 ## Recreate the source selection
 
@@ -153,7 +159,11 @@ python -m scripts.prepare_sites
 
 This downloads the official 2025 annual EIA archive if absent, inspects the actual Plant and Operable generator sheets, selects plants with OP generators, deduplicates plant codes and writes 55 records. The raw download is about 24 MB and is excluded from Git and the starter package. EIA-860M workbook requests timed out or returned non-workbook content during setup; the verified annual archive was used instead. Monthly data can replace the input later with a separate verified importer.
 
-data/source_checks/noaa_headers.json contains the actual 2024 NOAA details-file column names, retrieved from the gzip stream. No historical model has been trained. The ML owner should use CZ_TYPE, STATE_FIPS and CZ_FIPS carefully; county names in the plant data need a verified FIPS crosswalk.
+data/source_checks/noaa_headers.json contains the actual 2024 NOAA details-file
+column names, retrieved from the gzip stream. The saved model uses 54 counties
+covering the 55 plants and 2022–2024 county-day data. See docs/ML.md for the
+verified crosswalk, label construction, evaluation and reproduction limitations.
+Prepared training data are ignored by Git and are not included in this clone.
 
 ## Structure and parallel work
 

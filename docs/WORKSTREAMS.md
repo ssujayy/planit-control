@@ -26,9 +26,12 @@ verification, interfaces and limitations.
 
 ## What is not built
 
-No historical training dataset, trained model, verified live strike ingestion,
-10-mile strike processing, report upload APIs, briefing scheduler,
-Gemini integration, authentication or public deployment is implemented here.
+The merged ML work includes a saved trained logistic model, evaluation,
+inference and optional model contributions, plus a separate offline tree
+comparison. Prepared historical datasets remain ignored and are not shipped by
+Git. Automatic forecast-to-model prediction persistence, verified live strike
+ingestion, 10-mile strike processing, report upload APIs, briefing scheduler,
+Gemini integration, authentication and public deployment remain unfinished.
 NWS flood/fire-weather monitoring does not provide river gauges/proximity or
 active-fire detections. Storage and evidence ranking do not complete these requirements. Do not present placeholders
 as features. No persistent worker was left running by A's bounded checks.
@@ -37,7 +40,7 @@ as features. No persistent worker was left running by A's bounded checks.
 
 1. D consumes the ranked Outlook and site-evidence responses for the attention queue, site-by-time matrix and timeline.
 2. B connects validated strike processing, shared photo upload/history and local 18:00 scheduling to A's repositories; propose additive schema/interface changes to A if needed.
-3. C supplies actual trained predictions/evaluation using save_prediction, plus a bounded inference job factory.
+3. Connect C's saved model to full site-local daily forecast features, save_prediction and a bounded inference job factory; see docs/INTEGRATION_BACKEND_ML.md.
 4. A integrates B/C jobs and feed coverage; D presents missing coverage independently of hazard state.
 5. Register B/C factories in one worker, verify live/replay isolation and scheduled delivery, and run an integrated clean-clone check. Commit only when the human authorizes it.
 
