@@ -1,0 +1,88 @@
+{
+  "label": "simulated replay",
+  "description": "SIMULATED lightning strikes for demonstrating the 10-mile, 30-minute hold. Not real lightning data. Positions are offsets from real seeded plant coordinates in data/sites.json. Offsets are seconds of replay-clock time after the session starts.",
+  "source": "simulated-replay",
+  "strikes": [
+    {
+      "event_id": "dh-001",
+      "anchor_site_id": 663,
+      "latitude": 29.88159,
+      "longitude": -82.33642,
+      "occurred_offset_s": 0,
+      "delivered_offset_s": 0,
+      "note": "About 9 miles from Deerhaven: starts a 30-minute hold."
+    },
+    {
+      "event_id": "dh-002",
+      "anchor_site_id": 663,
+      "latitude": 29.60958,
+      "longitude": -82.45043,
+      "occurred_offset_s": 60,
+      "delivered_offset_s": 60,
+      "note": "About 11 miles from Deerhaven: outside 10 miles, no hold."
+    },
+    {
+      "event_id": "dh-001",
+      "anchor_site_id": 663,
+      "latitude": 29.88159,
+      "longitude": -82.33642,
+      "occurred_offset_s": 0,
+      "delivered_offset_s": 120,
+      "note": "Duplicate event id: ignored."
+    },
+    {
+      "event_id": "dh-003",
+      "anchor_site_id": 663,
+      "latitude": 29.79536,
+      "longitude": -82.46002,
+      "occurred_offset_s": 600,
+      "delivered_offset_s": 600,
+      "note": "About 5 miles from Deerhaven: extends the hold to +40 minutes."
+    },
+    {
+      "event_id": "dh-004",
+      "anchor_site_id": 663,
+      "latitude": 29.73024,
+      "longitude": -82.33006,
+      "occurred_offset_s": 300,
+      "delivered_offset_s": 900,
+      "note": "Delayed report of an older strike: cannot shorten the hold."
+    },
+    {
+      "event_id": "gg-001",
+      "anchor_site_id": 6072,
+      "latitude": 32.00806,
+      "longitude": -90.94539,
+      "occurred_offset_s": 300,
+      "delivered_offset_s": 300,
+      "note": "About 6 miles from Grand Gulf (Central time): starts a hold."
+    },
+    {
+      "event_id": "gg-002",
+      "anchor_site_id": 6072,
+      "latitude": 31.96843,
+      "longitude": -91.17605,
+      "occurred_offset_s": 1500,
+      "delivered_offset_s": 1500,
+      "note": "About 8 miles from Grand Gulf: extends the hold to +55 minutes."
+    },
+    {
+      "event_id": "ht-001",
+      "anchor_site_id": 6051,
+      "latitude": 31.9649,
+      "longitude": -82.30851,
+      "occurred_offset_s": 900,
+      "delivered_offset_s": 900,
+      "note": "About 3 miles from Edwin I Hatch: starts a hold."
+    },
+    {
+      "event_id": "ht-002",
+      "anchor_site_id": 6051,
+      "latitude": 31.78223,
+      "longitude": -82.3447,
+      "occurred_offset_s": 1200,
+      "delivered_offset_s": 1200,
+      "note": "About 10.5 miles from Edwin I Hatch: outside 10 miles, no change."
+    }
+  ]
+}
