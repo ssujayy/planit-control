@@ -66,7 +66,7 @@ Four human owners work simultaneously, each with their own coding assistant. Rol
 - Alerts/reports: lightning state, reporting, briefing generation and scheduling.
 - ML: dataset, labels, training, evaluation, prediction export.
 
-docs/WORKSTREAMS.md is the authority for who owns which paths. Some documents refer to owners by letter (A, B, C, D) and the letters differ between documents (for example docs/ML.md calls the ML owner C). Use role names when messaging teammates and check WORKSTREAMS.md when unsure.
+docs/WORKSTREAMS.md is the authority for who owns which paths. Letters: A = backend integration (database schema and migrations, shared backend wiring, the single worker); B = operational events (lightning, crew reports, briefings); C = ML (data, model, evaluation, inference); D = frontend (state, components, visualization). If any document uses different letters, WORKSTREAMS.md wins and the other document should be corrected.
 
 One integration owner coordinates shared contracts and merges.
 
@@ -76,6 +76,7 @@ Git rules:
 - Coordinate before changing another owner's active module, shared API response shapes, the schema or shared dependencies. Update docs/API_CONTRACT.md and notify affected owners BEFORE changing a field name or shape.
 - Use fixtures that match the contract so work continues before other modules are ready.
 - Keep changes focused: no unrelated refactors or formatting churn.
+- Each owner keeps a short factual log in docs/coordination/<letter>.md: scoped task and owned files, contracts checked, any real mismatch and its resolution, verification, handoff. Write only your own log. Never record conversations or conflicts that did not happen.
 - Commit completed, verified steps when the human owner requests or authorizes it. Never force-push, rewrite shared history or discard others' work without explicit authorization.
 
 Handoff report: what works; changed files; commands/checks run and their results; remaining gaps and integration needs.
@@ -180,7 +181,7 @@ Briefings:
 - Build the deterministic template first. Include tomorrow's forecast, active alerts, unresolved reports, missing-data notes, and the model index with its extrapolation label where shown.
 - Gemini may rewrite supplied facts only; it must not invent measurements or policies. Store the result and keep the template fallback.
 - Run one worker, independent of Flask's development reloader. Schedule at 18:00 in each site's IANA timezone (sites in America/Chicago run at 7 PM Eastern).
-- Distinguish briefing delivery date from forecast target date. Enforce one scheduled briefing per site per local delivery date at the database level (UNIQUE site_id, local_date).
+- Distinguish briefing delivery date from forecast target date. Enforce one scheduled briefing per site per local delivery date at the database level (unique on site_id, local_date and event_mode, so replay briefings can never collide with live ones).
 - Manual demonstration generation uses the same idempotent generation function. Keep replay briefings isolated from live scheduled delivery.
 - Test scheduling before waiting for the real 6 PM run.
 

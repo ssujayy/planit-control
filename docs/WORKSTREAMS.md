@@ -4,10 +4,10 @@ Assign actual names before editing the same files. Owners are proposed roles, no
 
 | Owner | Files and responsibility | Next acceptance check |
 |---|---|---|
-| A Frontend | frontend/src; site list/map/detail and shared UI state | Select a plant and see real weather, with source and units |
-| B Backend and data | backend/db.py, schema, seed, ingestion, shared deployment | Seed Tiger Data and see the same records via database mode |
-| C Alerts and crew workflow | New alerts/reports/briefings modules; worker | Persistent lightning event processing and photo upload |
-| D ML | New ml/ folder; NOAA/weather joins and model evaluation | Five counties and one year with verified positive and negative rows |
+| A Backend integration | backend/db.py, backend/schema.sql and migrations, seed, ingestion, shared backend wiring, the single worker | New tables applied to Tiger Data; the worker runs B's briefing function and stays single |
+| B Operational events | backend/lightning.py, reports.py, briefings.py and their routes, docs/replay/, behavior tests | Persistent isolated lightning holds, cross-device photo reports, one briefing per site/date/mode |
+| C ML | ml/ folder; NOAA/weather joins, model, evaluation, inference | Baseline done on feature/ml; predictions stored and shown with the extrapolation label |
+| D Frontend | frontend/src; Shift Outlook (attention queue, site-by-time matrix, evidence timeline), map, report form, briefing inbox | Views run on contract fixtures first, then real endpoints |
 
 ## What is already scaffolded
 
