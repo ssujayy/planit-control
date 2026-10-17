@@ -1,4 +1,17 @@
-# Install the C-only package
+# C integration entry point
+
+The verified implementation was pushed on feature/ml-expanded as commit
+e4d57cfa42d56a3f51f2257fc8f2f00652768f88. For A: use the tracked artifact
+and pinned ml/requirements.txt; inference requires no downloads, prepared data,
+or retraining. See docs/coordination/C.md for the persistence field mapping.
+
+The commands below describe the original local package/reproduction workflow,
+not required integration steps. Do not switch branches, retrain, or copy folders
+over existing work to integrate the saved model. ml/output is ignored and is
+not shipped by Git; the full offline audit requires that preserved local data.
+Run `python -m ml.verify` only where those prepared files exist.
+
+## Original package reproduction notes
 
 Copy the `ml` folder into the existing project root. Copy `docs/ML.md` into
 the existing docs folder. Do not replace backend, frontend, .env, or other docs.

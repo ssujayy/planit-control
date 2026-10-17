@@ -124,3 +124,48 @@ ml/test_ml.py tests/test_foundation.py -q -p no:cacheprovider. Audit passed;
 12 tests passed. Git status/diff and tracked/ignored checks inspected. No shared
 backend, frontend, schema, API contract, or dependency files changed. No download,
 commit, push, or merge. Additional owned files: ml/verify.py and ml/START_HERE.md.
+
+## Integration readiness review after e4d57cf
+
+The verified implementation was committed and pushed on feature/ml-expanded
+as e4d57cfa42d56a3f51f2257fc8f2f00652768f88. Earlier modified-file/no-commit
+statements describe the pre-commit review. This follow-up preserves the model,
+results, dataset and downloader unchanged.
+
+| C requirement | Current implementation | Remaining action |
+|---|---|---|
+| Historical real-data pipeline | County crosswalk, C-only NOAA records, full county-day grid, cached weather, manifest hashes | No new downloads needed |
+| Plant coverage | All 55 plants represented by 54 deduplicated counties | A attaches site IDs to saved outputs |
+| Training/evaluation | Saved preprocessing/model, chronological splits, baselines, validation-selected threshold | No retraining needed |
+| Experimental 0–10 index | Saved-model probability times ten; null for unavailable | A invokes/persists; D displays experimental label |
+| Missing data/provenance | Input checks, range flags, manifest, versions, timestamps | A retains forecast provenance and freshness |
+| Explanation semantics | Existing note and outside_training_range; no causal contributions claimed | No new explanation fields proposed |
+| App integration | Pure callable ready; checked-out backend returns model_index null | A owns persistence/API/worker; D owns consumption |
+
+A mapping to existing agreed prediction fields; no shared interface changes:
+
+| Callable output | Persistence field / handling |
+|---|---|
+| No site identifier in callable | A attaches the originating stable site id |
+| target_date | valid_date, the site's local forecast calendar date |
+| model_index | score; preserve null for unavailable |
+| model_version | model_version; null on unavailable is not a successful versioned prediction |
+| feature_version | feature_version |
+| computed_at | computed_at in UTC |
+| status / reason | Handle unavailability explicitly; schema/API representation requires A's contract decision |
+| probability / outside_training_range / note | Existing metadata; new persistence columns or public fields require agreement |
+
+Supply complete daily forecast aggregates in documented units. The existing UTC
+hourly window does not guarantee tomorrow's complete local day. A should use
+verified site-local provider daily fields or validate complete local-day coverage
+before aggregation. Missing, stale, failed or incomplete forecasts must not become
+zero or a successful current prediction. Provider valid/retrieval time and units
+are input provenance; computed_at is inference time, not provider retrieval time.
+
+Lightning/replay state, reports/photos, briefings, hazard ranking, Shift Outlook,
+map, migrations and worker registration remain outside C's files. Daily ML
+outputs must not override official alerts or appear as hourly predictions.
+No A log or integrated prediction worker is present in this checkout. This is
+a documented handoff, not a claim of A's acceptance or an agent conversation.
+No new response/explanation fields added. START_HERE now distinguishes saved
+inference from original reproduction steps and the audit's ignored-data needs.
