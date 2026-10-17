@@ -32,7 +32,16 @@ def main():
     parser.add_argument('--validation-year', type=int, default=2023)
     parser.add_argument('--test-year', type=int, default=2024)
     args = parser.parse_args()
+    manifest = json.loads((OUT / 'manifest.json').read_text())
+    if digest(OUT / 'dataset.csv') != manifest['dataset_sha256']:
+        raise ValueError('Dataset hash differs from source manifest; rebuild before training')
     frame = pd.read_csv(OUT / 'dataset.csv', dtype={'county_fips': str})
+    if frame.duplicated(['county_fips', 'date']).any() or not frame.label.isin([0, 1]).all():
+        raise ValueError('Expected unique county-days with binary reported-event labels')
+    if len(frame) != manifest['rows'] or int(frame.label.sum()) != manifest['positive_days']:
+        raise ValueError('Dataset counts differ from source manifest')
+    if any(frame[key].notna().sum() == 0 for key in DAILY):
+        raise ValueError('Required weather feature is entirely unavailable')
     frame['year'] = pd.to_datetime(frame.date).dt.year
     train = frame[frame.year < args.validation_year]
     valid = frame[frame.year.eq(args.validation_year)]
@@ -41,6 +50,8 @@ def main():
         raise ValueError('Need nonempty ordered train, validation, and test periods')
     if train.label.nunique() != 2 or valid.label.nunique() != 2 or test.label.nunique() != 2:
         raise ValueError('Each split needs both classes for this evaluation; inspect data, do not invent examples')
+    if any(train[key].notna().sum() == 0 for key in DAILY):
+        raise ValueError('Required weather feature is entirely unavailable in training')
     model = make_pipeline(SimpleImputer(strategy='median'), StandardScaler(),
                           LogisticRegression(max_iter=1000, random_state=42))
     model.fit(train[FEATURES], train.label)
@@ -66,16 +77,22 @@ def main():
                'dependencies': {'python': platform.python_version(), 'scikit-learn': sklearn.__version__,
                                 'pandas': pd.__version__, 'numpy': np.__version__, 'joblib': joblib.__version__},
                'features': FEATURES, 'threshold': threshold,
+               'dataset_sha256': manifest['dataset_sha256'],
+               'dataset_rows': len(frame), 'county_count': int(frame.county_fips.nunique()),
+               'missing_values': {key: int(frame[key].isna().sum()) for key in FEATURES},
                'threshold_selection': 'Maximum validation F1 over fixed 0.01..0.50 grid; test untouched.',
                'train_years': sorted(int(y) for y in train.year.unique()),
                'validation_year': args.validation_year, 'test_year': args.test_year,
                'training_rows': len(train), 'training_prevalence': float(train.label.mean()),
+               'split_dates': {name: {'start': part.date.min(), 'end': part.date.max()}
+                               for name, part in [('train', train), ('validation', valid), ('test', test)]},
+               'training': metrics(train.label, model.predict_proba(train[FEATURES])[:, 1], threshold),
                'validation': metrics(valid.label, vp, threshold),
                'test': metrics(test.label, tp, threshold),
                'constant_baseline': metrics(test.label, baseline, threshold),
                'always_negative_baseline': metrics(test.label, np.zeros(len(test)), threshold),
                'artifact_sha256': digest(artifact),
-               'limitations': json.loads((OUT / 'manifest.json').read_text())['limitations']}
+               'limitations': manifest['limitations']}
     save_json(ROOT / 'ml/results.json', results)
     print(json.dumps(results, indent=2))
 

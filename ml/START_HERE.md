@@ -2,7 +2,7 @@
 
 Copy the `ml` folder into the existing project root. Copy `docs/ML.md` into
 the existing docs folder. Do not replace backend, frontend, .env, or other docs.
-The package includes the real prepared five-county dataset and trained model;
+The current local package contains a prepared 54-county dataset and trained model;
 raw provider downloads are excluded. output/ is gitignored to avoid accidentally
 committing training data, but is included in this handoff for local reproduction.
 
@@ -30,8 +30,9 @@ Commit only C's paths after reviewing git status:
 ```powershell
 git add ml docs/ML.md
 git commit -m "Add experimental county-day ML baseline and inference"
-git push -u origin feature/ml
 ```
 
 The trained artifact and results are tracked; intermediate output is ignored.
-Keep the feature branch separate until A coordinates integration.
+Keep the feature branch separate until A coordinates integration. Commit, push,
+or merge only when the human owner authorizes it. The current working branch is
+feature/ml-expanded; do not switch away from another owner's uncommitted work.

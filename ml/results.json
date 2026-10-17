@@ -1,6 +1,6 @@
 {
-  "model_version": "county-weather-logreg-fe35d2856412",
-  "computed_at": "2026-10-17T19:01:18.529395+00:00",
+  "model_version": "county-weather-logreg-277e4566fcdb",
+  "computed_at": "2026-10-17T21:44:01.764514+00:00",
   "dependencies": {
     "python": "3.12.10",
     "scikit-learn": "1.8.0",
@@ -15,56 +15,90 @@
     "season_sin",
     "season_cos"
   ],
-  "threshold": 0.08,
+  "threshold": 0.05,
+  "dataset_sha256": "277e4566fcdb420efdf51ac5194bdbd2f4bf51e857b4a93eba4c0ad488c41549",
+  "dataset_rows": 59184,
+  "county_count": 54,
+  "missing_values": {
+    "temperature_2m_max": 0,
+    "precipitation_sum": 0,
+    "wind_gusts_10m_max": 0,
+    "season_sin": 0,
+    "season_cos": 0
+  },
   "threshold_selection": "Maximum validation F1 over fixed 0.01..0.50 grid; test untouched.",
   "train_years": [
     2022
   ],
   "validation_year": 2023,
   "test_year": 2024,
-  "training_rows": 1825,
-  "training_prevalence": 0.017534246575342465,
+  "training_rows": 19710,
+  "training_prevalence": 0.016539827498731608,
+  "split_dates": {
+    "train": {
+      "start": "2022-01-01",
+      "end": "2022-12-31"
+    },
+    "validation": {
+      "start": "2023-01-01",
+      "end": "2023-12-31"
+    },
+    "test": {
+      "start": "2024-01-01",
+      "end": "2024-12-31"
+    }
+  },
+  "training": {
+    "rows": 19710,
+    "positive_days": 326,
+    "prevalence": 0.016539827498731608,
+    "average_precision": 0.1317083741119503,
+    "roc_auc": 0.8621980306318031,
+    "precision": 0.13402061855670103,
+    "recall": 0.3987730061349693,
+    "predicted_positive_days": 970
+  },
   "validation": {
-    "rows": 1825,
-    "positive_days": 39,
-    "prevalence": 0.021369863013698632,
-    "average_precision": 0.1909373544093369,
-    "roc_auc": 0.8131909150946104,
-    "precision": 0.19444444444444445,
-    "recall": 0.358974358974359,
-    "predicted_positive_days": 72
+    "rows": 19710,
+    "positive_days": 420,
+    "prevalence": 0.0213089802130898,
+    "average_precision": 0.10982616963564072,
+    "roc_auc": 0.8305585178602286,
+    "precision": 0.12847555129434324,
+    "recall": 0.319047619047619,
+    "predicted_positive_days": 1043
   },
   "test": {
-    "rows": 1830,
-    "positive_days": 24,
-    "prevalence": 0.013114754098360656,
-    "average_precision": 0.11621281442619535,
-    "roc_auc": 0.8586655592469545,
-    "precision": 0.15873015873015872,
-    "recall": 0.4166666666666667,
-    "predicted_positive_days": 63
+    "rows": 19764,
+    "positive_days": 312,
+    "prevalence": 0.015786278081360048,
+    "average_precision": 0.12428380395397078,
+    "roc_auc": 0.8648431774202903,
+    "precision": 0.13803376365441908,
+    "recall": 0.44551282051282054,
+    "predicted_positive_days": 1007
   },
   "constant_baseline": {
-    "rows": 1830,
-    "positive_days": 24,
-    "prevalence": 0.013114754098360656,
-    "average_precision": 0.013114754098360656,
+    "rows": 19764,
+    "positive_days": 312,
+    "prevalence": 0.015786278081360048,
+    "average_precision": 0.015786278081360048,
     "roc_auc": 0.5,
     "precision": 0.0,
     "recall": 0.0,
     "predicted_positive_days": 0
   },
   "always_negative_baseline": {
-    "rows": 1830,
-    "positive_days": 24,
-    "prevalence": 0.013114754098360656,
-    "average_precision": 0.013114754098360656,
+    "rows": 19764,
+    "positive_days": 312,
+    "prevalence": 0.015786278081360048,
+    "average_precision": 0.015786278081360048,
     "roc_auc": 0.5,
     "precision": 0.0,
     "recall": 0.0,
     "predicted_positive_days": 0
   },
-  "artifact_sha256": "fb650538fe45e3ee2d711e8891cb63a1521e1a3f39bbb84f7270ab5d5eca1860",
+  "artifact_sha256": "ad0f5f4d03561885d0ead33a3f5e0e6b89c93869989a1a9e341d6a932955ccf2",
   "limitations": [
     "Negative = no selected event reported, not proven absence.",
     "County-wide label paired with weather at representative plant.",

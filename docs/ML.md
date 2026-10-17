@@ -19,10 +19,18 @@ records are used. Negatives mean no selected event reported, not proven absence.
 .\.venv\Scripts\python.exe -m pytest ml/test_ml.py -q
 ```
 
-Default: five counties, geographically selected one per state, 2022–2024.
+Builder default: five counties, geographically selected one per state, 2022–2024.
 Do not select counties based on final-test performance. To expand after proving
-the pipeline, use `--limit 0` (55 counties); this makes more provider calls and
+the pipeline, use `--limit 0` (all 54 unique counties); this makes more provider calls and
 requires retraining/evaluation. Do not change geography just to improve scores.
+
+The current saved artifact uses the already expanded local dataset: 54 unique
+counties covering the 55 plant locations, 59,184 county-days during 2022–2024,
+1,058 positive days, and no missing weather features. The dataset hash is recorded
+in ml/results.json and checked against the source manifest before training.
+2024 test average precision is 0.1243 versus the constant baseline's 0.0158;
+precision is 0.1380 and recall 0.4455 at the validation-selected threshold 0.05.
+These are retrospective reported-event metrics, not operational forecast accuracy.
 
 Raw downloads are cached under gitignored data/raw/ml. Prepared dataset,
 crosswalk, event examples, and source hashes are under ignored ml/output.
@@ -83,7 +91,7 @@ target_date, model_version, feature_version, computed_at, and range warnings.
 Unavailable result: null score/probability plus reason. Persist the output using
 the shared agreed database schema; C does not change schema or register jobs.
 
-The prototype is trained on a five-county sample, so predicting other counties
+The saved model is trained on the 54 plant counties, so predicting other counties
 is geographic extrapolation. A/D must label that scope. Out-of-training-range
 weather is flagged. Do not rank above official warnings based on this index.
 
