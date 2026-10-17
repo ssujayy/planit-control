@@ -1,0 +1,75 @@
+{
+  "model_version": "county-weather-logreg-fe35d2856412",
+  "computed_at": "2026-10-17T19:01:18.529395+00:00",
+  "dependencies": {
+    "python": "3.12.10",
+    "scikit-learn": "1.8.0",
+    "pandas": "2.2.3",
+    "numpy": "2.3.5",
+    "joblib": "1.5.3"
+  },
+  "features": [
+    "temperature_2m_max",
+    "precipitation_sum",
+    "wind_gusts_10m_max",
+    "season_sin",
+    "season_cos"
+  ],
+  "threshold": 0.08,
+  "threshold_selection": "Maximum validation F1 over fixed 0.01..0.50 grid; test untouched.",
+  "train_years": [
+    2022
+  ],
+  "validation_year": 2023,
+  "test_year": 2024,
+  "training_rows": 1825,
+  "training_prevalence": 0.017534246575342465,
+  "validation": {
+    "rows": 1825,
+    "positive_days": 39,
+    "prevalence": 0.021369863013698632,
+    "average_precision": 0.1909373544093369,
+    "roc_auc": 0.8131909150946104,
+    "precision": 0.19444444444444445,
+    "recall": 0.358974358974359,
+    "predicted_positive_days": 72
+  },
+  "test": {
+    "rows": 1830,
+    "positive_days": 24,
+    "prevalence": 0.013114754098360656,
+    "average_precision": 0.11621281442619535,
+    "roc_auc": 0.8586655592469545,
+    "precision": 0.15873015873015872,
+    "recall": 0.4166666666666667,
+    "predicted_positive_days": 63
+  },
+  "constant_baseline": {
+    "rows": 1830,
+    "positive_days": 24,
+    "prevalence": 0.013114754098360656,
+    "average_precision": 0.013114754098360656,
+    "roc_auc": 0.5,
+    "precision": 0.0,
+    "recall": 0.0,
+    "predicted_positive_days": 0
+  },
+  "always_negative_baseline": {
+    "rows": 1830,
+    "positive_days": 24,
+    "prevalence": 0.013114754098360656,
+    "average_precision": 0.013114754098360656,
+    "roc_auc": 0.5,
+    "precision": 0.0,
+    "recall": 0.0,
+    "predicted_positive_days": 0
+  },
+  "artifact_sha256": "fb650538fe45e3ee2d711e8891cb63a1521e1a3f39bbb84f7270ab5d5eca1860",
+  "limitations": [
+    "Negative = no selected event reported, not proven absence.",
+    "County-wide label paired with weather at representative plant.",
+    "Local calendar dates; NOAA event-time timezone conventions may differ near midnight.",
+    "Multi-day events mark all touched dates within source year; prior-year spillover is not imported.",
+    "Reanalysis evaluation does not measure operational forecast accuracy."
+  ]
+}
