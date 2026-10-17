@@ -1,0 +1,15 @@
+.env
+.env.*
+!.env.example
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+frontend/node_modules/
+frontend/dist/
+uploads/
+data/raw/
+data/source_checks/*.html
+data/source_checks/weather.json
+*.log
+
