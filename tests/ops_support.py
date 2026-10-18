@@ -41,6 +41,7 @@ def make_client(monkeypatch, store, clock):
     app = create_app()
     app.config['OPS_STORE'] = store
     app.config['OPS_CLOCK'] = clock
+    app.config['OPS_OUTLOOK'] = lambda now: None  # no database offline
     return app.test_client()
 
 

@@ -52,7 +52,8 @@ def test_replay_session_drives_holds_on_one_clock():
 
 def test_restarting_session_resets_replay_only():
     store = MemoryStore(SITES)
-    store.data['holds'][(663, 'live')] = {'site_id': 663, 'event_mode': 'live', 'hold_until': WALL}
+    store.store_strike({'event_mode': 'live', 'source': 'feed', 'event_id': 'l1', 'occurred_at': WALL,
+                        'latitude': 29.76, 'longitude': -82.39}, [663])
     start_session(store, WALL)
     sync(store, WALL + timedelta(minutes=2), SITES)
     assert store.list_holds('replay')

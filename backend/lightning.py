@@ -70,29 +70,37 @@ def _hold_event(strike, site_id, effect, distance_km, previous, new):
         'id': f"{strike['event_mode']}:{strike['source']}:{strike['event_id']}:{site_id}",
         'site_id': site_id, 'type': f'lightning_hold_{effect}', 'occurred_at': strike['occurred_at'],
         'source': strike['source'], 'event_mode': strike['event_mode'], 'summary': summary,
-        'details': {'strike_event_id': strike['event_id'], 'distance_km': round(distance_km, 2),
-                    'distance_miles': round(miles, 2), 'hold_until': iso(new), 'previous_hold_until': iso(previous)},
+        # Canonical record: the lightning_events row (source, event_mode, event_id). The hold itself is
+        # lightning_holds (site_id, event_mode); hold_until here is the value this strike produced.
+        'ref_table': 'lightning_events',
+        'ref_key': {'source': strike['source'], 'event_mode': strike['event_mode'], 'event_id': strike['event_id']},
+        'details': {'lightning_hold': {'site_id': site_id, 'event_mode': strike['event_mode']},
+                    'distance_km': round(distance_km, 2), 'distance_miles': round(miles, 2),
+                    'hold_until': iso(new), 'previous_hold_until': iso(previous)},
     }
 
 
 def process_strike(store, strike, sites, now):
-    """Apply one validated strike. Duplicates (event_mode, source, event_id) are a no-op."""
+    """Apply one validated strike via the shared repository. Duplicates (event_mode, source, event_id) are a no-op."""
     if strike['occurred_at'] > now + FUTURE_TOLERANCE:
         raise ValidationError('occurred_at is in the future relative to the clock for this event_mode')
     result = {'accepted': True, 'duplicate': False, 'event_mode': strike['event_mode'], 'label': mode_label(strike['event_mode']),
               'strike': {'event_id': strike['event_id'], 'source': strike['source'], 'occurred_at': iso(strike['occurred_at']),
                          'latitude': strike['latitude'], 'longitude': strike['longitude']},
               'affected_sites': []}
-    record = dict(strike, received_at=now)
-    if not store.insert_strike(record):
+    affected = []
+    for site in sites:
+        distance = haversine_km(strike['latitude'], strike['longitude'], site['latitude'], site['longitude'])
+        if distance <= RADIUS_KM:
+            affected.append((site, distance))
+    before = {h['site_id']: h['hold_until'] for h in store.list_holds(strike['event_mode'])} if affected else {}
+    if not store.store_strike(strike, [site['id'] for site, _ in affected]):
         return dict(result, accepted=False, duplicate=True)
     store.record_feed(strike['event_mode'], strike['source'], received_at=now)
     candidate = strike['occurred_at'] + HOLD
-    for site in sites:
-        distance = haversine_km(strike['latitude'], strike['longitude'], site['latitude'], site['longitude'])
-        if distance > RADIUS_KM:
-            continue
-        previous, new = store.extend_hold(site['id'], strike['event_mode'], candidate, strike, distance, now)
+    for site, distance in affected:
+        previous = before.get(site['id'])
+        new = candidate if previous is None else max(previous, candidate)
         if previous is None or previous <= strike['occurred_at']:
             effect = 'started'
         elif new > previous:
@@ -143,25 +151,29 @@ def coverage(store, event_mode, now, live_source=None, replay_session=None):
     """Monitoring coverage for lightning, kept separate from hazard state."""
     if event_mode == 'replay':
         if replay_session is None:
-            return {'status': 'UNAVAILABLE', 'source': None, 'last_event_received_at': None, 'last_feed_check_at': None,
+            return {'status': 'UNAVAILABLE', 'source': None, 'feed_connected': False, 'last_event_received_at': None, 'last_feed_check_at': None,
                     'note': 'No simulated replay session is running.'}
         received = [f['last_event_received_at'] for f in store.get_feeds('replay') if f['last_event_received_at']]
-        return {'status': 'COMPLETE', 'source': 'simulated replay script', 'last_event_received_at': iso(max(received, default=None)),
+        return {'status': 'COMPLETE', 'source': 'simulated replay script', 'feed_connected': True, 'last_event_received_at': iso(max(received, default=None)),
                 'last_feed_check_at': iso(now), 'note': 'Simulated replay. Not real lightning data.'}
     feeds = store.get_feeds('live')
     received = max((f['last_event_received_at'] for f in feeds if f['last_event_received_at']), default=None)
     checked = max((f['last_feed_check_at'] for f in feeds if f['last_feed_check_at']), default=None)
-    base = {'source': live_source.name if live_source else None, 'last_event_received_at': iso(received), 'last_feed_check_at': iso(checked)}
-    if live_source is None or not live_source.configured:
+    connected = live_source is not None and live_source.configured
+    base = {'source': live_source.name if live_source else None, 'feed_connected': connected,
+            'last_event_received_at': iso(received), 'last_feed_check_at': iso(checked)}
+    if not connected:
         return dict(base, status='UNAVAILABLE', note='No live lightning feed is connected. The absence of a hold is not evidence of no strikes.')
     if checked is None:
         return dict(base, status='UNAVAILABLE', note='The live lightning feed has not been checked yet.')
     if now - checked > STALE_AFTER:
         return dict(base, status='STALE', note=f'The live lightning feed was last checked more than {int(STALE_AFTER.total_seconds() // 60)} minutes ago.')
-    return dict(base, status='COMPLETE', note=None)
+    note = None if received else 'Feed connected and checked; no strikes have been received.'
+    return dict(base, status='COMPLETE', note=note)
 
 
 def hold_view(hold, now, site=None):
+    """hold is a lightning_holds row: site_id, hold_until, last_strike_at, source."""
     held = hold is not None and hold['hold_until'] > now
     return {
         'site_id': hold['site_id'] if hold else (site['id'] if site else None),
@@ -169,11 +181,7 @@ def hold_view(hold, now, site=None):
         'hold_active': held,
         'hold_until': iso(hold['hold_until']) if hold else None,
         'seconds_remaining': int((hold['hold_until'] - now).total_seconds()) if held else 0,
-        'last_qualifying_strike': {
-            'event_id': hold['last_strike_event_id'], 'source': hold['last_strike_source'],
-            'occurred_at': iso(hold['last_strike_at']), 'distance_km': round(hold['last_strike_distance_km'], 2),
-            'distance_miles': round(hold['last_strike_distance_km'] / KM_PER_MILE, 2),
-        } if hold else None,
+        'last_strike': {'source': hold['source'], 'occurred_at': iso(hold['last_strike_at'])} if hold else None,
     }
 
 

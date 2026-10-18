@@ -14,10 +14,11 @@ def utc_now():
 
 
 def iso(value):
-    """UTC ISO 8601 with a Z suffix, or None."""
+    """UTC ISO 8601 via A's backend.outlook.serialize (offset form, +00:00), or None."""
     if value is None:
         return None
-    return value.astimezone(timezone.utc).isoformat().replace('+00:00', 'Z')
+    from .outlook import serialize
+    return serialize(value.astimezone(timezone.utc))
 
 
 def parse_iso(value, field):

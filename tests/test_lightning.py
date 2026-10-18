@@ -40,7 +40,7 @@ def test_strike_at_9_miles_starts_hold(store):
     assert result['affected_sites'][0]['effect'] == 'started'
     view = status(store, '2026-10-17T18:10:00+00:00')
     assert view['hazard']['state'] == 'STOP_WORK'
-    assert view['hazard']['hold_until'] == '2026-10-17T18:30:00Z'
+    assert view['hazard']['hold_until'] == '2026-10-17T18:30:00+00:00'
     assert view['hazard']['seconds_remaining'] == 20 * 60
 
 
@@ -71,7 +71,7 @@ def test_later_strike_extends(store):
     run(store, strike('s1', 9))
     result = run(store, strike('s2', 3, when='2026-10-17T18:15:00+00:00'))
     assert result['affected_sites'][0]['effect'] == 'extended'
-    assert status(store, '2026-10-17T18:35:00+00:00')['hazard']['hold_until'] == '2026-10-17T18:45:00Z'
+    assert status(store, '2026-10-17T18:35:00+00:00')['hazard']['hold_until'] == '2026-10-17T18:45:00+00:00'
     assert [e['type'] for e in store.list_events(663, 'live')] == ['lightning_hold_started', 'lightning_hold_extended']
 
 
@@ -79,14 +79,15 @@ def test_expiry_clears_only_lightning_hold(store):
     run(store, strike('s1', 9))
     other = parse_strike(strike_payload('o1', OTHER, 2, '2026-10-17T18:20:00+00:00'))
     process_strike(store, other, SITES, other['occurred_at'])
-    store.create_report({'id': 'r1', 'site_id': 663, 'event_mode': 'live', 'status': 'unresolved',
-                         'created_at': at(T0), 'category': 'wildlife'}, None)
+    report_id = store.create_report({'site_id': 663, 'event_mode': 'live', 'latitude': 29.76, 'longitude': -82.39,
+                                     'category': 'wildlife', 'note': 'Gator', 'observed_at': at(T0),
+                                     'photo': b'\xff\xd8\xffx', 'photo_content_type': 'image/jpeg'})
     view = status(store, '2026-10-17T18:31:00+00:00')
     assert view['hazard']['hold_active'] is False
     assert view['hazard']['state'] is None  # unknown: no live feed, never "clear"
     assert 'safe' not in str(view).lower() and 'all clear' not in str(view).lower()
     assert lightning_status(store, OTHER, 'live', at('2026-10-17T18:31:00+00:00'))['hazard']['state'] == 'STOP_WORK'
-    assert store.get_report('r1')['status'] == 'unresolved'
+    assert store.get_report(report_id)['resolved_at'] is None
 
 
 def test_missing_live_feed_is_unavailable_not_clear(store):
