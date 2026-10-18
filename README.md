@@ -34,7 +34,7 @@ npm ci
 npm run dev
 ```
 
-Open the Vite URL printed in the terminal (normally http://localhost:5173). The Vite proxy forwards /api to Flask. The demo file mode shows 55 **real** plant records from EIA's 2025 inventory without needing a database. Click Fetch current weather for an actual provider request; it may take several seconds. Demo describes site storage, not fabricated weather.
+Open the Vite URL printed in the terminal (normally http://localhost:5173). The Vite proxy forwards /api to Flask. The dashboard defaults to Tiger Data and automatically reads stored evidence; run the separate worker for fresh conditions. The file-inventory option shows 55 **real** EIA plants without a database, with monitoring explicitly unavailable. It never silently replaces a failed database connection. See [the frontend handoff](docs/FRONTEND_HANDOFF.md) for functionality and outstanding integrations.
 
 The checked-in inventory establishes plants with an operating generator in that source year. It does not verify current operating status. The selection covers FL, GA, AL, MS and LA; Florida is restricted to known Eastern-time counties. See data/sites.json for provenance and SHA-256.
 
@@ -89,11 +89,13 @@ current bounded callback. Briefing and prediction jobs are not implemented yet.
 warnings, available saved holds/reports/model outputs, provenance, units, valid
 times, retrieval times and monitoring coverage. Its evidence ranking prioritizes
 holds and official warnings above model signals. It never requests provider
-data. Use it for the upcoming site-by-time frontend matrix. Site-specific
+data. The frontend uses it for the ranked queue, map, and selected-site evidence. Site-specific
 `/api/sites/{id}/evidence` and aggregate `/api/readiness` are also read-only.
 `mode=demo` returns file-based plant records and explicitly unavailable stored
-weather. Existing manual weather fetch remains available; database-mode manual
-fetches also persist their results. See docs/API_CONTRACT.md for exact fields.
+weather. The dashboard polls this stored-data route every 15 seconds and never
+calls the provider-refresh weather endpoint. Site selection reads the already
+loaded evidence. The older weather endpoint remains available for explicit API
+requests. See docs/API_CONTRACT.md for exact fields.
 
 Weather covers three UTC calendar days. The current fields are modeled current
 conditions; hourly fields are forecasts. Apparent temperature is not NWS heat
@@ -128,9 +130,27 @@ Flask serves frontend/dist once it exists. The Flask development server is for l
 python -m pytest -q
 cd frontend
 npm run build
+node --test tests/outlook.test.mjs
 ```
 
-The default tests cover source uniqueness, explicit storage modes, errors,
+Frontend behavior checks cover lightning expiration/extension presentation,
+hazard priority, stale coverage, missing versus zero model scores, and local
+briefing dates including daylight-saving transitions. Optional browser checks
+use an installed Chromium browser without additional npm dependencies:
+
+```bash
+cd frontend
+node tests/dashboard.browser.mjs
+# With Flask running on port 5000, verify the real stored database responses:
+node tests/dashboard.browser.mjs --live http://127.0.0.1:5000
+```
+
+Browser fixtures are synthetic test data served only by the test script. They
+are never bundled into the app or written to Tiger Data. Screenshots go into
+the gitignored frontend/dist/checks directory. PLANIT_BROWSER can specify a
+Chromium executable when Chrome/Edge is not found automatically.
+
+The default backend tests cover source uniqueness, explicit storage modes, errors,
 stored-data polling, freshness/missing fields, forecast local-day/DST summaries,
 official-warning composition/ranking, bounded ingestion and worker failure
 handling. PostgreSQL integration checks are opt-in:
@@ -173,7 +193,7 @@ Prepared training data are ignored by Git and are not included in this clone.
 - docs: interface contract, ownership and checkpoint plan.
 - tests: foundation behavior checks.
 
-The manual provider helper still has a 15-minute in-process cache. Database
+The provider helper still has a 15-minute in-process cache. Database
 storage additionally retains complete provider snapshots in weather_snapshots,
 with latest attempt/success metadata in weather_ingestion. A failed refresh
 never replaces the prior snapshot with empty/zero conditions. The original
