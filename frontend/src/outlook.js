@@ -50,13 +50,29 @@ export function siteSummary(row, now) {
   return 'No active official alerts in the available reports.';
 }
 
+// Presentation-only exclusions for feeds that have no implemented integration.
+// Keep all stored evidence and temporary failures in working integrations intact.
+export function isUnimplementedFeed(value) {
+  return /^(lightning|lightning feed|automatic lightning detection|wildfire|fire|fire detection|fire detections)$/i.test(String(value).replaceAll('_', ' ').trim());
+}
+
+export function displayedMissingLayers(row) {
+  return (row.unavailable_layers ?? []).filter(value => !isUnimplementedFeed(value));
+}
+
+export function briefingTextForDisplay(text = '') {
+  return text.split('\n').filter(line => {
+    if (/^Lightning monitoring coverage:/.test(line)) return false;
+    const missing = line.match(/^Missing: (.+)\.$/);
+    return !missing || !isUnimplementedFeed(missing[1]);
+  }).join('\n');
+}
+
 export function monitoringSummary(row, now, disconnected = false) {
   const gaps = [];
   if (feedState(row, 'weather', now, disconnected) !== 'COMPLETE') gaps.push('weather needs an update');
   if (feedState(row, 'official', now, disconnected) !== 'COMPLETE') gaps.push('warnings need an update');
-  if (row.unavailable_layers?.includes('lightning')) gaps.push('automatic lightning unavailable');
-  if ((row.unavailable_layers ?? []).some(layer => /fire/i.test(layer))) gaps.push('fire detection unavailable');
-  const other = (row.unavailable_layers ?? []).filter(layer => !/lightning|fire|weather|official|model|prediction/i.test(layer));
+  const other = displayedMissingLayers(row).filter(layer => !/weather|official|model|prediction/i.test(layer));
   if (other.length) gaps.push('other monitoring missing');
   return gaps.length ? gaps.join(' · ') : 'Configured checks are up to date';
 }
@@ -152,7 +168,13 @@ export function attentionReasons(row, now) {
   if (hold) reasons.push(`Lightning hold · ${countdown(hold, now)} remaining`);
   if (alerts.length) reasons.push(alerts.map(alert => alert.event).join(', '));
   if (row.unresolved_reports?.length) reasons.push(`${row.unresolved_reports.length} unresolved crew report(s)`);
-  reasons.push(...(row.reasons ?? []).filter(reason =>
+  reasons.push(...(row.reasons ?? []).map(reason => {
+    if (/^Incomplete monitoring: /.test(reason)) {
+      const layers = reason.slice('Incomplete monitoring: '.length).replace(/\.$/, '').split(', ').filter(value => !isUnimplementedFeed(value));
+      return layers.length ? 'Incomplete monitoring: ' + layers.join(', ') + '.' : '';
+    }
+    return /^(Live strike monitoring is unavailable|Missing strike feed)/.test(reason) ? '' : reason;
+  }).filter(Boolean).filter(reason =>
     !/^(Active lightning hold|Official alerts:|\d+ unresolved crew report)/.test(reason)));
   return [...new Set(reasons)];
 }

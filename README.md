@@ -9,6 +9,18 @@ model predictions and site-local 6 PM briefings. Live strike monitoring remains
 unconnected. See the [requirement audit](docs/requirements-audit.md) for evidence
 and gaps and the [demo walkthrough](docs/DEMO.md).
 
+The map includes recent **RainViewer rain radar** with a time slider, Play/Pause,
+Latest, a rain-layer toggle, a dark-map toggle and Focus selected site. Plant
+markers and automatic scrolling to the selected list entry still work. The
+site's weather remains available in its Weather now & tomorrow panel.
+Frame times, stale/error states and missing coverage are explicit; this is radar
+history, not a rainfall forecast or lightning detector. The worker refreshes the
+stored manifest every five minutes; the backend caches validated image tiles.
+Migration **006_radar_feed.sql** adds the global cache (applied to the configured
+database in this session). No new dependency or API key is needed. The public
+API is used for this educational demonstration; review RainViewer's terms before
+commercial use.
+
 The October 18 follow-up connected this checkout to Tiger Data, applied
 migrations 003–005 and verified stored forecasts and today/tomorrow indices for
 all 55 plants. Credentials remain local in ignored `.env`; a fresh clone still
@@ -21,7 +33,7 @@ refresh also updates them. The model uses entire local-day features and cannot
 produce an instantaneous score from current readings.
 
 Scores display two decimals consistently, so small saved results such as 0.06
-and 0.09 no longer both appear as 0.1. The small **Debug** button reveals model
+and 0.09 no longer both appear as 0.1. Opening the dashboard with `?debug=1` reveals model
 metadata, source/freshness details, full briefing text and the storage selector.
 The default view uses simpler labels and keeps missing monitoring visible.
 
@@ -298,6 +310,8 @@ partial. NWS has separate 10-minute freshness and preserves unexpired warnings
 after refresh failure. Missing required hazard integrations remain disclosed.
 
 ## Sources and credit
+
+- RainViewer radar: https://www.rainviewer.com/ and https://www.rainviewer.com/api/weather-maps-api.html (recent radar frames; personal/educational public API).
 
 - EIA-860 2025: https://www.eia.gov/electricity/data/eia860/
 - Actual archive: https://www.eia.gov/electricity/data/eia860/xls/eia8602025.zip

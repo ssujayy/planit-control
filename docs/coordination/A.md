@@ -2,6 +2,113 @@
 
 ## Scope and ownership
 
+- October 18, 2026: simplified SiteMap.jsx tooltips to marker number and plant name. No API changes.
+
+- October 18, 2026: audited frontend unavailable messages. App.jsx, DashboardPanels.jsx, CrewWorkflow.jsx and outlook.js now omit permanent unimplemented-feed notices from presentation, retaining recoverable failures, active alerts and crew lightning recording. Briefing filtering applies to saved text as well as structured display. No API/schema changes; requirement gaps remain documented. Verification: 18 frontend behavior tests passed, production build passed, full Chromium fixture workflow passed on desktop/mobile, and git diff --check passed.
+
+- October 18, 2026: simplified map tooltips in App.jsx/SiteMap.jsx by showing monitoring details only in debug mode. Site names, hazard states and model values remain visible. No API changes.
+
+- October 18, 2026: set hazard-report grid controls to a shared 44px height and reduced the native file button to 34px with compact outer padding in styles.css. No API changes.
+
+- October 18, 2026: styled the native file-selector button in styles.css to match the website in light and dark themes, retaining native file selection. No API changes.
+
+- October 18, 2026: updated styles.css to apply 3px input/textarea corners and center the report-section heading. Dropdowns retain square corners. No API changes.
+
+- October 18, 2026: darkened the dark theme page background from #101b24 to #0b131a in styles.css, as requested. No API changes.
+
+- October 18, 2026: adjusted weather-panel details spacing in styles.css to match the content inset and leave 24px below Forecast planning periods. No API changes.
+
+- October 18, 2026: added the requested header theme toggle and CSS theme colors in App.jsx/styles.css. Preference persists locally, with light mode as default. No API changes. Production build, Chromium desktop/mobile toggle and reload-persistence checks, map selection checks and git diff --check passed.
+
+- October 18, 2026: removed the top-right Debug button and unused toggle styling.
+  Diagnostics now use `?debug=1`, leaving normal URLs in the clean view. No API changes.
+
+- October 18, 2026: hid latitude/longitude spinners with browser-specific CSS;
+  capitalized category display labels with explicit original option values.
+  Numeric validation and API category values remain intact. No API changes.
+
+- October 18, 2026: restricted the lightning card's automatic-detection paragraph
+  to Debug and updated the browser's normal-view expectation. No API changes.
+
+- October 18, 2026: simplified the At this site card to its heading and summary
+  in normal view. Coverage badge/details remain in Debug. No API changes.
+
+- October 18, 2026: centered the map legend and site-pin number labels in
+  frontend/src/styles.css. Consistent label dimensions handle one/two-digit
+  ranks. No shared contract changes.
+
+- October 18, 2026: frontend/src/styles.css makes the desktop site panel a flex
+  column with the scroll list filling available height; mobile keeps its bounded
+  list. Size containment lets the map determine desktop row height. Map-legend
+  bottom padding increased to 32px. Build and real-55-site desktop/mobile browser
+  checks passed, including repeated map selection and filtered-list scrolling.
+  No shared contract changes.
+
+- October 18, 2026: removed requested radar scale, rainfall row, explanatory text
+  and map footnote; retained a compact RainViewer attribution link on the map.
+  Removed unused weather props/styles. Fixed history selection incorrectly marking
+  a fresh radar feed stale, and updated the focused browser regression. No API,
+  schema or worker changes. Build and focused desktop/mobile radar browser checks
+  passed, including outage recovery, attribution and old-history freshness.
+
+### October 18, 2026 - RainViewer radar integration
+
+Human requested a current rain overlay like the supplied RainViewer reference.
+Verified the actual public JSON and PNG, documented additive API/006 table first,
+then added backend/radar.py, db.py repositories, app blueprint and one radar job
+in the existing worker. Applied 006 and saved 13 real frames. No shared fields
+were renamed, dependencies changed or second worker introduced.
+
+Frontend SiteMap/RadarControls and scoped CSS add dark-map/rain toggles, frame
+selection/playback/latest, selected-site current modeled rain and site focus.
+Preserved current marker/list selection and the human's uncommitted styling.
+Fixed removal ordering so Leaflet cleans its map listeners before local layer
+handlers are cleared; repeated playback/toggles/focus now pass without errors.
+
+210 Python/database tests passed, one historical-data check skipped; 17 Node
+checks and production build passed. Isolated PostgreSQL verifies retained-cache
+failure and delayed-success ordering. Chromium fixtures cover tile failures and
+provider outages plus all controls; actual 55-site desktop/mobile radar checks
+and full existing workflow browser checks passed. Inspected real radar image.
+Source verification stored under data/source_checks/radar_integration.json.
+
+Handoff: backend-only raster delivery and stored metadata polling; max native
+zoom 7, visible stale/missing coverage; educational API/source credit in README.
+Existing backend/one worker restarted. No credential readout, commit or push.
+
+- October 18, 2026: increased hr margins to 28px vertically and moved the top
+  database connection status into Debug. Inventory-only warning remains visible.
+  No shared contract changes.
+
+- October 18, 2026: added requested hr elements between Crew alerts and the site
+  workspace, and immediately before CrewReports, using the supplied 3px #97dbdb
+  borderless styling. No shared contract changes.
+
+- October 18, 2026: requested 3px corner radius applied to dashboard divs, panels
+  and alert notices. Follow-up excludes Leaflet containers and descendants so
+  map markers/controls retain their original shapes. Square dropdowns preserved.
+  No shared contract changes.
+
+- October 18, 2026: map-to-list scrolling in frontend/src/App.jsx uses a dedicated
+  map-selection handler and list ref; clears filters, handles repeated selection
+  and scrolls only the list. Added focused browser regressions for hidden entries,
+  repeat clicks and unchanged page position. Production build, 17 Node checks and
+  fixture/real-55-site desktop/mobile Chromium checks passed. No backend, API or
+  dependency changes; preserved pending styling edits. No commit/push.
+
+- October 18, 2026: removed border radius from all dropdowns using a shared select
+  rule in frontend/src/styles.css. No shared contract changes.
+
+- October 18, 2026: clarified `#97dbdb` border color now applies across dashboard
+  cards, panels, alerts, buttons, dividers, markers and inputs through one shared
+  CSS variable. No shared contract changes.
+
+- October 18, 2026: requested page-background color changed in
+  `frontend/src/styles.css` to `#ebffff`; no shared contract changes.
+- October 18, 2026: clarified request applies `#00518f` to all text, including
+  alerts, buttons, placeholders and Leaflet controls. Lightened filled controls
+  and marker-label backgrounds to preserve readability. No shared contract changes.
+
 ### October 18, 2026, 3:35 AM ET - model display, crew lightning, tomorrow reports
 
 Human requested four fixes across the integrated dashboard/operational flow.

@@ -1,0 +1,76 @@
+{
+  "retrieved_at": "2026-10-18T08:20:15.532065+00:00",
+  "payload": {
+    "version": "2.0",
+    "generated": 1792311322,
+    "host": "https://tilecache.rainviewer.com",
+    "radar": {
+      "past": [
+        {
+          "time": 1792303800,
+          "path": "/v2/radar/04e62c3ab88b"
+        },
+        {
+          "time": 1792304400,
+          "path": "/v2/radar/2f31aef4ce58"
+        },
+        {
+          "time": 1792305000,
+          "path": "/v2/radar/397592841d82"
+        },
+        {
+          "time": 1792305600,
+          "path": "/v2/radar/eb3af32b992a"
+        },
+        {
+          "time": 1792306200,
+          "path": "/v2/radar/05ed0fa47936"
+        },
+        {
+          "time": 1792306800,
+          "path": "/v2/radar/20010bdfd27a"
+        },
+        {
+          "time": 1792307400,
+          "path": "/v2/radar/039b71c7000a"
+        },
+        {
+          "time": 1792308000,
+          "path": "/v2/radar/3c7701f67a12"
+        },
+        {
+          "time": 1792308600,
+          "path": "/v2/radar/5fa0d56dd400"
+        },
+        {
+          "time": 1792309200,
+          "path": "/v2/radar/b7f1115d5cf3"
+        },
+        {
+          "time": 1792309800,
+          "path": "/v2/radar/aab789793079"
+        },
+        {
+          "time": 1792310400,
+          "path": "/v2/radar/b7bd97a725c2"
+        },
+        {
+          "time": 1792311000,
+          "path": "/v2/radar/351041e43b69"
+        }
+      ],
+      "nowcast": []
+    },
+    "satellite": {
+      "infrared": []
+    }
+  },
+  "source": "RainViewer",
+  "source_url": "https://api.rainviewer.com/public/weather-maps.json",
+  "verification": {
+    "tile": "Miami coordinate tile, zoom 7, Universal Blue, smooth/no snow separation",
+    "tile_content_type": "image/png",
+    "tile_bytes": 19863,
+    "note": "Actual public response; historical source check, not an application fallback."
+  }
+}

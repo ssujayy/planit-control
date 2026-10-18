@@ -8,7 +8,7 @@ Use the README setup. This is a prototype; provider/data gaps remain visible.
    Never edit already-applied migrations. Start Flask and exactly one worker.
 2. Open the dashboard in Tiger Data storage. Confirm 55 sites. Select the first
    ranked site; inspect official warnings and today/tomorrow model scores.
-   Toggle the small Debug button for weather units/valid/retrieval times,
+   Add `?debug=1` to the dashboard URL for weather units/valid/retrieval times,
    coverage and tomorrow's experimental index. Holds and official warnings
    outrank the numeric score. No recorded alert is not a safety clearance.
 3. Inspect flood evidence: official NWS products stay distinct from the
@@ -50,7 +50,7 @@ The HTTP strike endpoint rejects attempts to inject live events. A real provider
 must implement the `StrikeSource` protocol and use `poll_source` in the existing
 worker, with a verified actual payload, licensing and reconnect/checkpoint rules.
 
-Without database credentials, enable Debug and select file inventory to inspect the 55 real
+Without database credentials, open `?debug=1` and select file inventory to inspect the 55 real
 locations with explicitly unavailable monitoring. Use `python -m
 scripts.verify_providers` for a bounded actual-provider/model check, and
 `node tests/dashboard.browser.mjs` in frontend for isolated UI fixtures.

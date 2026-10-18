@@ -28,7 +28,7 @@ export function OfficialAlert({ alert, timezone }) {
   </article>;
 }
 
-export function AlertCenter({ rows, now, onSelect, lightningConnected, loading, available }) {
+export function AlertCenter({ rows, now, onSelect, loading, available }) {
   const active = rows.filter(row => activeHold(row, now) || activeAlerts(row, now).length || row.flood_advisory?.active);
   return <section className="panel alert-center" id="alerts" aria-labelledby="alerts-title">
     <div className="panel-title"><h2 id="alerts-title">Crew alerts</h2><span>{active.length} sites with recorded active alerts</span></div>
@@ -43,7 +43,7 @@ export function AlertCenter({ rows, now, onSelect, lightningConnected, loading, 
       </button>;
     })}</div> : <div className="empty-state compact">
       <strong>{loading ? 'Loading stored alert evidence…' : !available ? 'Alert evidence unavailable' : 'No active alerts in the stored evidence'}</strong>
-      <p>{!lightningConnected && 'Automatic lightning detection is unavailable. '}Check site conditions and crew reports before work.</p>
+      <p>Check site conditions and crew reports before work.</p>
     </div>}
   </section>;
 }
@@ -73,13 +73,12 @@ export function SiteDetails({ row, now, disconnected, readiness, storageMode, on
     </div>
     <div className="detail-grid">
       <article className={`panel evidence-card ${hold ? 'lightning-active' : ''}`}>
-        <div className="card-heading"><h3>Lightning hold</h3><Badge state={hold ? 'STOP_WORK' : 'UNAVAILABLE'}>{hold ? 'Stop work' : 'Monitoring unavailable'}</Badge></div>
+        <div className="card-heading"><h3>Lightning hold</h3>{hold && <Badge state="STOP_WORK">Stop work</Badge>}</div>
         {hold ? <>
           <p className="countdown-label">Hold remaining</p><p className="countdown" aria-label={`${countdown(hold, now)} remaining on lightning hold`}>{countdown(hold, now)}</p>
           <p>Last qualifying strike: {formatTime(hold.last_strike_at, site.timezone)}<br/>Hold expires: {formatTime(hold.hold_until, site.timezone)}</p>
           <p>{hold.source === 'crew-observed' ? 'Recorded by a crew member.' : `Source: ${hold.source}.`} New nearby lightning extends the hold. Other warnings still apply when the timer ends.</p>
         </> : <p>No active lightning hold recorded.</p>}
-        {!readiness?.lightning?.live_feed_connected && <p className="integration-note">Automatic lightning detection is unavailable. Crew observations can be recorded below.</p>}
         <LightningRecording site={site} enabled={storageMode === 'live'} debug={debug} onChanged={onChanged}/>
       </article>
 
@@ -100,8 +99,8 @@ export function SiteDetails({ row, now, disconnected, readiness, storageMode, on
         {prediction && <meter min="0" max="10" value={prediction.score} aria-label="Experimental model index"/>}
         <p>Tomorrow · {formatDate(tomorrow)}</p>
         <p className="today-index">Today: <strong>{currentPrediction ? formatScore(currentPrediction.score) + ' / 10' : 'Unavailable'}</strong></p>
-        {!currentPrediction && <p className="integration-note">{debug ? predictionReason(row, now, 0) : 'Today’s score is unavailable. Open Debug for the reason.'}</p>}
-        {!prediction && <p className="integration-note">{debug ? 'Tomorrow: ' + predictionReason(row, now) : 'Tomorrow’s score is unavailable. Open Debug for the reason.'}</p>}
+        {!currentPrediction && <p className="integration-note">{debug ? predictionReason(row, now, 0) : 'Today’s score is unavailable.'}</p>}
+        {!prediction && <p className="integration-note">{debug ? 'Tomorrow: ' + predictionReason(row, now) : 'Tomorrow’s score is unavailable.'}</p>}
         <p>Higher scores mean more weather concern in the model. These daily forecasts do not replace warnings or lightning holds.</p>
         {debug && <><p className="muted">Both indices use the latest full-day forecast. A model trained on daily maxima and totals cannot give an instantaneous rating from current readings.</p>
         {prediction ? <dl className="metadata"><dt>Model</dt><dd>{prediction.model_version}</dd><dt>Computed</dt><dd>{formatTime(prediction.computed_at, site.timezone)}</dd><dt>Artifact</dt><dd>{prediction.provenance?.model_artifact ?? 'Not supplied'}</dd></dl>
@@ -136,6 +135,7 @@ export function SiteDetails({ row, now, disconnected, readiness, storageMode, on
 
     {otherAlerts.length > 0 && <section className="panel evidence-card"><h3>Other official warnings & advisories</h3>{otherAlerts.map(alert => <OfficialAlert key={alert.id} alert={alert} timezone={site.timezone}/>)}</section>}
     {row.unresolved_reports?.length > 0 && <section className="panel evidence-card"><h3>Unresolved crew evidence</h3>{row.unresolved_reports.map(report => <article className="report" key={report.id}><strong>{report.category}</strong><p>{report.note}</p><small>{formatTime(report.observed_at, site.timezone)}</small></article>)}</section>}
+    <hr/>
     <CrewReports site={site} enabled={storageMode === 'live'} onChanged={onChanged} debug={debug}/>
   </section>;
 }
@@ -148,8 +148,8 @@ export function IntegrationCoverage({ readiness, readinessError, rows, now, disc
     <div className="integration-grid">
       <div><strong>Weather snapshots</strong><p>{freshWeather} / {rows.length} sites with complete, fresh weather</p><small>Stored weather becomes stale after 30 minutes or a failed refresh.</small></div>
       <div><strong>Official NWS monitoring</strong><p>{freshOfficial} / {rows.length} sites with fresh official monitoring</p><small>10-minute freshness limit. Fire-weather warnings are separate from fire detections.</small></div>
-      <div><strong>Lightning detection</strong><p>{readiness?.lightning?.live_feed_connected ? 'Provider connected' : 'Live strike monitoring unavailable'}</p><small>Stored holds remain visible. Monitoring must be connected to detect new nearby strikes.</small></div>
-      <div><strong>Daily briefing delivery</strong><p>{readiness?.briefings?.scheduled_delivery_implemented ? 'In-app inbox connected' : 'Delivery implementation unavailable'}</p><small>Worker required at 6 PM local. Check the selected site’s inbox for persisted delivery records.</small></div>
+      <div><strong>Crew lightning records</strong><p>{readiness?.lightning?.storage_ready ? 'Recording connected' : 'Recording status unavailable'}</p><small>Crew observations start or extend the recorded hold.</small></div>
+      <div><strong>Daily briefing delivery</strong><p>{readiness?.briefings?.scheduled_delivery_implemented ? 'In-app inbox connected' : 'Delivery status unavailable'}</p><small>Worker required at 6 PM local. Check the selected site’s inbox for persisted delivery records.</small></div>
     </div>
     {readinessError && <p className="source-line stale-text" role="status">{readinessError} Availability cannot be confirmed.</p>}
   </section>;

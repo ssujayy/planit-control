@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { activeAlerts, activeHold, attentionReasons, briefingWindow, countdown, coverageState, feedState, formatScore, hazardState, monitoringSummary, predictionFor, predictionReason, rankRows } from '../src/outlook.js';
+import { activeAlerts, activeHold, briefingTextForDisplay, displayedMissingLayers, attentionReasons, briefingWindow, countdown, coverageState, feedState, formatScore, hazardState, monitoringSummary, predictionFor, predictionReason, rankRows } from '../src/outlook.js';
 import { floodAlert, siteRow } from './fixtures.mjs';
 
 const now = Date.parse('2026-10-17T21:59:50Z');
@@ -11,9 +11,10 @@ test('different small model scores remain distinguishable and unavailable is nev
   for (const value of [null, undefined, NaN, -1, 11]) assert.equal(formatScore(value), 'Unavailable');
 });
 
-test('plain-language monitoring keeps missing lightning visible', () => {
+test('monitoring omits unimplemented feeds and retains recoverable data failures', () => {
   const row = siteRow(1, now);
-  assert.match(monitoringSummary(row, now), /lightning unavailable/);
+  assert.doesNotMatch(monitoringSummary(row, now), /lightning|fire/i);
+  assert.deepEqual(displayedMissingLayers(row), ['wildlife', 'model']);
   assert.match(monitoringSummary(row, now, true), /weather needs an update/);
 });
 
@@ -66,7 +67,7 @@ test('elapsed holds drop below active warnings without stale hold reasons', () =
   const expired = siteRow(1, now, { lightning_hold: hold(now), reasons: ['Active lightning hold until expired.', 'Missing strike feed.'] });
   const warning = siteRow(2, now, { alerts: [floodAlert(now)] });
   assert.deepEqual(rankRows([expired, warning], now).map(row => row.site.id), [2, 1]);
-  assert.deepEqual(attentionReasons(expired, now), ['Missing strike feed.']);
+  assert.deepEqual(attentionReasons(expired, now), []);
 });
 
 test('zero is a real saved score; null, invalid, or bare model_index is unavailable', () => {
@@ -137,4 +138,11 @@ test('fresh retrieval cannot conceal an old weather valid time', () => {
   const row = siteRow(1, now);
   row.weather.current.time = Math.floor(now / 1000) - 1801;
   assert.equal(feedState(row, 'weather', now), 'STALE');
+});
+
+test('presentation removes only unimplemented feed notices from saved reports and reasons', () => {
+  const text = 'Missing: lightning feed.\nMissing: wildfire.\nMissing: forecast.\nLightning monitoring coverage: UNAVAILABLE.\nOfficial alert: Fire Weather Warning.\nLightning holds today: 1 hold(s) started.';
+  assert.equal(briefingTextForDisplay(text), 'Missing: forecast.\nOfficial alert: Fire Weather Warning.\nLightning holds today: 1 hold(s) started.');
+  const row = siteRow(1, now, { reasons: ['Incomplete monitoring: lightning, wildfire, weather, model.', 'Official warning monitoring is stale.'] });
+  assert.deepEqual(attentionReasons(row, now), ['Incomplete monitoring: weather, model.', 'Official warning monitoring is stale.']);
 });
