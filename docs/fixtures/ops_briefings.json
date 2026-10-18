@@ -1,0 +1,81 @@
+{
+  "fixture": true,
+  "http_status": 200,
+  "as_of": "2026-10-17T22:08:00Z",
+  "briefings": [
+    {
+      "body_text": "Next-day briefing for Deerhaven Generating Station (America/New_York). Delivery date 2026-10-17 at 6:00 PM site-local time; forecast target date 2026-10-18.\n\nTomorrow's forecast\nForecast unavailable: no stored next-day forecast for this site. No forecast values are shown.\n\nToday's evidence\nOfficial alerts: not yet integrated. The absence of alerts here is not evidence that no warnings exist.\nLightning holds today: none recorded.\nLightning monitoring coverage: UNAVAILABLE. No live lightning feed is connected. The absence of a hold is not evidence of no strikes.\nUnresolved crew reports: 1.\n- wildlife: Alligator seen near the north culvert. (reported 2026-10-17T22:02:00Z)\n\nExperimental model index\nExperimental model index: not yet integrated.\n\nMissing data\nMissing: forecast.\nMissing: official alerts.\nMissing: lightning feed.\nMissing: model index.",
+      "delivered_at": "2026-10-17T22:08:00Z",
+      "delivered_local_time": "2026-10-17T18:08:00-04:00",
+      "delivery_local_date": "2026-10-17",
+      "event_mode": "live",
+      "forecast_target_date": "2026-10-18",
+      "generator": "template-v1",
+      "id": "live:663:2026-10-17",
+      "label": null,
+      "missing_inputs": [
+        "forecast",
+        "official alerts",
+        "lightning feed",
+        "model index"
+      ],
+      "note": "Generated from supplied facts only. Forecasts, official alerts, crew reports and the experimental model index are different kinds of evidence. Missing inputs are listed, not filled in.",
+      "rewrite_status": "not_requested",
+      "rewritten_text": null,
+      "scheduled_local_time": "18:00",
+      "sections": [
+        {
+          "available": false,
+          "evidence_type": "forecast",
+          "key": "forecast",
+          "lines": [
+            "Forecast unavailable: no stored next-day forecast for this site. No forecast values are shown."
+          ],
+          "title": "Tomorrow's forecast"
+        },
+        {
+          "available": true,
+          "evidence_type": "today_evidence",
+          "key": "today_evidence",
+          "lines": [
+            "Official alerts: not yet integrated. The absence of alerts here is not evidence that no warnings exist.",
+            "Lightning holds today: none recorded.",
+            "Lightning monitoring coverage: UNAVAILABLE. No live lightning feed is connected. The absence of a hold is not evidence of no strikes.",
+            "Unresolved crew reports: 1.",
+            "- wildlife: Alligator seen near the north culvert. (reported 2026-10-17T22:02:00Z)"
+          ],
+          "title": "Today's evidence"
+        },
+        {
+          "available": false,
+          "evidence_type": "experimental_model_index",
+          "key": "model",
+          "lines": [
+            "Experimental model index: not yet integrated."
+          ],
+          "title": "Experimental model index"
+        },
+        {
+          "available": true,
+          "evidence_type": "missing_data",
+          "key": "missing_data",
+          "lines": [
+            "Missing: forecast.",
+            "Missing: official alerts.",
+            "Missing: lightning feed.",
+            "Missing: model index."
+          ],
+          "title": "Missing data"
+        }
+      ],
+      "site_id": 663,
+      "site_name": "Deerhaven Generating Station",
+      "timezone": "America/New_York",
+      "trigger": "manual"
+    }
+  ],
+  "count": 1,
+  "event_mode": "live",
+  "label": null,
+  "site_id": 663
+}

@@ -1,0 +1,30 @@
+{
+  "fixture": true,
+  "http_status": 200,
+  "as_of": "2026-10-17T22:00:00Z",
+  "clock": "server",
+  "coverage": {
+    "last_event_received_at": null,
+    "last_feed_check_at": null,
+    "note": "No live lightning feed is connected. The absence of a hold is not evidence of no strikes.",
+    "source": "live-strike-feed",
+    "status": "UNAVAILABLE"
+  },
+  "event_mode": "live",
+  "hazard": {
+    "hold_active": false,
+    "hold_until": null,
+    "last_qualifying_strike": null,
+    "seconds_remaining": 0,
+    "site_id": 663,
+    "site_name": "Deerhaven Generating Station",
+    "state": null,
+    "state_reason": "Lightning hazard state unknown: monitoring coverage is UNAVAILABLE.",
+    "type": "lightning"
+  },
+  "hold_minutes": 30,
+  "label": null,
+  "note": "Lightning hold status covers only lightning. When the countdown ends, only the lightning hold is lifted; other hazards and feed coverage are unchanged.",
+  "radius_miles": 10,
+  "site_id": 663
+}

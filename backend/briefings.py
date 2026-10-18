@@ -8,7 +8,7 @@ from datetime import date, time, timedelta
 from zoneinfo import ZoneInfo
 
 from .lightning import LiveSource, coverage
-from .ops_common import iso, mode_label
+from .ops_common import iso, mode_label, parse_iso
 from .reports import report_view
 
 DELIVERY_TIME = time(18, 0)
@@ -82,8 +82,9 @@ def _evidence_section(site, inputs, missing):
     if holds:
         started = sum(1 for e in holds if e['type'] == 'lightning_hold_started')
         last_until = max(e['details']['hold_until'] for e in holds)
+        local_end = _local_clock(site, parse_iso(last_until, 'hold_until'))
         lines.append(f'Lightning holds today: {started} hold(s) started, {len(holds) - started} extension(s); '
-                     f'latest hold end {last_until} UTC.')
+                     f'latest hold end {local_end} site-local ({last_until}).')
     else:
         lines.append('Lightning holds today: none recorded.')
     cov = inputs.get('lightning_coverage') or {}
@@ -91,12 +92,14 @@ def _evidence_section(site, inputs, missing):
         missing.append('lightning feed')
         lines.append(f"Lightning monitoring coverage: {cov.get('status') or 'UNAVAILABLE'}. {cov.get('note') or ''}".rstrip())
     reports = inputs.get('unresolved_reports')
+    source = ' (real crew reports, not simulated)' if inputs.get('reports_are_live_in_replay') else ''
     if reports is None:
-        lines.append('Crew reports: not included in simulated replay.')
+        missing.append('crew reports')
+        lines.append('Crew reports: unavailable.')
     elif not reports:
-        lines.append('Unresolved crew reports: none. No recent reports does not mean no hazard.')
+        lines.append(f'Unresolved crew reports{source}: none. No recent reports does not mean no hazard.')
     else:
-        lines.append(f'Unresolved crew reports: {len(reports)}.')
+        lines.append(f'Unresolved crew reports{source}: {len(reports)}.')
         for report in reports:
             note = f": {report['note']}" if report.get('note') else ''
             lines.append(f"- {report['category']}{note} (reported {report['created_at']})")
@@ -185,12 +188,11 @@ def store_inputs_provider(store, live_source=None, replay_session=None):
         day = _as_date(delivery_local_date)
         holds = [e for e in store.list_events(site['id'], event_mode)
                  if e['type'] in HOLD_TYPES and site_local(site, e['occurred_at']).date() == day]
-        unresolved = None
-        if event_mode == 'live':
-            unresolved = [report_view(r) for r in store.list_reports(site['id'], 'live') if r['status'] == 'unresolved']
+        # Crew reports are always real (event_mode "live"); replay briefings read them without changing them.
+        unresolved = [report_view(r) for r in store.list_reports(site['id'], 'live') if r['status'] == 'unresolved']
         return {'forecast': None, 'active_alerts': None, 'model': None, 'lightning_today': holds,
                 'lightning_coverage': coverage(store, event_mode, now, live_source or LiveSource(), replay_session),
-                'unresolved_reports': unresolved}
+                'unresolved_reports': unresolved, 'reports_are_live_in_replay': event_mode == 'replay'}
     return provider
 
 

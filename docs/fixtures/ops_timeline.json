@@ -1,0 +1,237 @@
+{
+  "fixture": true,
+  "http_status": 200,
+  "examples": {
+    "replay": {
+      "as_of": "2026-10-17T23:20:00Z",
+      "count": 8,
+      "event_mode": "replay",
+      "events": [
+        {
+          "details": {
+            "distance_km": 14.48,
+            "distance_miles": 9.0,
+            "hold_until": "2026-10-17T22:30:00Z",
+            "previous_hold_until": null,
+            "strike_event_id": "dh-001"
+          },
+          "event_mode": "replay",
+          "id": "replay:simulated-replay:dh-001:663",
+          "occurred_at": "2026-10-17T22:00:00Z",
+          "site_id": 663,
+          "source": "simulated-replay",
+          "summary": "Simulated replay: Strike 9.0 mi from site started a 30-minute lightning stop-work hold.",
+          "type": "lightning_hold_started"
+        },
+        {
+          "details": {
+            "category": "wildlife",
+            "has_photo": true,
+            "location_flag": null,
+            "report_id": "a20a5dcadc94457199df16f43de688f6"
+          },
+          "event_mode": "live",
+          "id": "live:report:a20a5dcadc94457199df16f43de688f6:created",
+          "occurred_at": "2026-10-17T22:02:00Z",
+          "site_id": 663,
+          "source": "crew_report",
+          "summary": "Crew report (wildlife) with photo: Alligator seen near the north culvert.",
+          "type": "report_created"
+        },
+        {
+          "details": {
+            "category": "mud",
+            "has_photo": false,
+            "location_flag": null,
+            "report_id": "85f61b593b4f4f8d9a3796794f36aecd"
+          },
+          "event_mode": "live",
+          "id": "live:report:85f61b593b4f4f8d9a3796794f36aecd:created",
+          "occurred_at": "2026-10-17T22:03:00Z",
+          "site_id": 663,
+          "source": "crew_report",
+          "summary": "Crew report (mud): Access road rutted at gate 2.",
+          "type": "report_created"
+        },
+        {
+          "details": {
+            "category": "mud",
+            "has_photo": false,
+            "location_flag": null,
+            "report_id": "85f61b593b4f4f8d9a3796794f36aecd"
+          },
+          "event_mode": "live",
+          "id": "live:report:85f61b593b4f4f8d9a3796794f36aecd:resolved",
+          "occurred_at": "2026-10-17T22:04:00Z",
+          "site_id": 663,
+          "source": "crew_report",
+          "summary": "Crew report (mud) marked resolved; it stays in site history.",
+          "type": "report_resolved"
+        },
+        {
+          "details": {
+            "distance_km": 8.05,
+            "distance_miles": 5.0,
+            "hold_until": "2026-10-17T22:40:00Z",
+            "previous_hold_until": "2026-10-17T22:30:00Z",
+            "strike_event_id": "dh-003"
+          },
+          "event_mode": "replay",
+          "id": "replay:simulated-replay:dh-003:663",
+          "occurred_at": "2026-10-17T22:10:00Z",
+          "site_id": 663,
+          "source": "simulated-replay",
+          "summary": "Simulated replay: Strike 5.0 mi from site extended the lightning stop-work hold.",
+          "type": "lightning_hold_extended"
+        },
+        {
+          "details": {
+            "distance_km": 3.22,
+            "distance_miles": 2.0,
+            "hold_until": "2026-10-17T22:50:00Z",
+            "previous_hold_until": "2026-10-17T22:40:00Z",
+            "strike_event_id": "demo-manual-001"
+          },
+          "event_mode": "replay",
+          "id": "replay:simulated-replay:demo-manual-001:663",
+          "occurred_at": "2026-10-17T22:20:00Z",
+          "site_id": 663,
+          "source": "simulated-replay",
+          "summary": "Simulated replay: Strike 2.0 mi from site extended the lightning stop-work hold.",
+          "type": "lightning_hold_extended"
+        },
+        {
+          "details": {
+            "clears_only": "lightning_hold",
+            "hold_until": "2026-10-17T22:50:00Z"
+          },
+          "event_mode": "replay",
+          "id": "replay:hold-expired:663:2026-10-17T22:50:00Z",
+          "occurred_at": "2026-10-17T22:50:00Z",
+          "site_id": 663,
+          "source": "planit-control (computed from hold_until)",
+          "summary": "Simulated replay: Lightning hold countdown ended. Only the lightning hold is lifted; other hazards and lightning feed coverage are unchanged.",
+          "type": "lightning_hold_expired"
+        },
+        {
+          "details": {
+            "briefing_id": "replay:663:2026-10-17",
+            "delivery_local_date": "2026-10-17",
+            "forecast_target_date": "2026-10-18",
+            "missing_inputs": [
+              "forecast",
+              "official alerts",
+              "model index"
+            ],
+            "trigger": "manual"
+          },
+          "event_mode": "replay",
+          "id": "replay:briefing:663:2026-10-17",
+          "occurred_at": "2026-10-17T23:20:00Z",
+          "site_id": 663,
+          "source": "planit-control briefing generator",
+          "summary": "Simulated replay: Next-day briefing delivered for 2026-10-18 (forecast target date).",
+          "type": "briefing_delivered"
+        }
+      ],
+      "includes": [
+        "simulated replay events",
+        "live crew reports (event_mode \"live\")"
+      ],
+      "label": "simulated replay",
+      "note": null,
+      "site_id": 663
+    },
+    "live": {
+      "as_of": "2026-10-17T22:08:00Z",
+      "count": 4,
+      "event_mode": "live",
+      "events": [
+        {
+          "details": {
+            "category": "wildlife",
+            "has_photo": true,
+            "location_flag": null,
+            "report_id": "a20a5dcadc94457199df16f43de688f6"
+          },
+          "event_mode": "live",
+          "id": "live:report:a20a5dcadc94457199df16f43de688f6:created",
+          "occurred_at": "2026-10-17T22:02:00Z",
+          "site_id": 663,
+          "source": "crew_report",
+          "summary": "Crew report (wildlife) with photo: Alligator seen near the north culvert.",
+          "type": "report_created"
+        },
+        {
+          "details": {
+            "category": "mud",
+            "has_photo": false,
+            "location_flag": null,
+            "report_id": "85f61b593b4f4f8d9a3796794f36aecd"
+          },
+          "event_mode": "live",
+          "id": "live:report:85f61b593b4f4f8d9a3796794f36aecd:created",
+          "occurred_at": "2026-10-17T22:03:00Z",
+          "site_id": 663,
+          "source": "crew_report",
+          "summary": "Crew report (mud): Access road rutted at gate 2.",
+          "type": "report_created"
+        },
+        {
+          "details": {
+            "category": "mud",
+            "has_photo": false,
+            "location_flag": null,
+            "report_id": "85f61b593b4f4f8d9a3796794f36aecd"
+          },
+          "event_mode": "live",
+          "id": "live:report:85f61b593b4f4f8d9a3796794f36aecd:resolved",
+          "occurred_at": "2026-10-17T22:04:00Z",
+          "site_id": 663,
+          "source": "crew_report",
+          "summary": "Crew report (mud) marked resolved; it stays in site history.",
+          "type": "report_resolved"
+        },
+        {
+          "details": {
+            "briefing_id": "live:663:2026-10-17",
+            "delivery_local_date": "2026-10-17",
+            "forecast_target_date": "2026-10-18",
+            "missing_inputs": [
+              "forecast",
+              "official alerts",
+              "lightning feed",
+              "model index"
+            ],
+            "trigger": "manual"
+          },
+          "event_mode": "live",
+          "id": "live:briefing:663:2026-10-17",
+          "occurred_at": "2026-10-17T22:08:00Z",
+          "site_id": 663,
+          "source": "planit-control briefing generator",
+          "summary": "Next-day briefing delivered for 2026-10-18 (forecast target date).",
+          "type": "briefing_delivered"
+        }
+      ],
+      "includes": [
+        "live events only"
+      ],
+      "label": null,
+      "note": null,
+      "site_id": 663
+    },
+    "empty": {
+      "as_of": "2026-10-17T22:08:00Z",
+      "count": 0,
+      "event_mode": "live",
+      "events": [],
+      "includes": [
+        "live events only"
+      ],
+      "label": null,
+      "note": "No operational events recorded for this site. This does not mean there is no hazard.",
+      "site_id": 6051
+    }
+  }
+}

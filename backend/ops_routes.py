@@ -15,6 +15,7 @@ from .lightning import HOLD_MINUTES, RADIUS_MILES, STATUS_NOTE, LiveSource, cove
 from .ops_common import REPLAY_LABEL, ValidationError, iso, mode_label, parse_event_mode, utc_now
 from .ops_store import PostgresStore
 from .reports import PHOTO_LIMIT, PhotoTooLarge, create_report, resolve_report, site_history
+from .timeline import site_timeline
 
 ops_bp = Blueprint('ops', __name__)
 
@@ -232,3 +233,16 @@ def generate_briefing_now(store):
     inputs = store_inputs_provider(store, _live_source(), session)(site, delivery, event_mode, now)
     briefing, created = deliver_briefing(store, site, delivery, inputs, event_mode, now, trigger='manual')
     return jsonify({'created': created, 'briefing': briefing}), 201 if created else 200
+
+
+# Evidence timeline
+
+@ops_bp.get('/api/sites/<int:site_id>/timeline')
+@with_store
+def timeline(store, site_id):
+    event_mode = _event_mode()
+    site = store.get_site(site_id)
+    if not site:
+        return _not_found('Site')
+    now, _ = _clock_for(store, event_mode)
+    return jsonify(site_timeline(store, site, event_mode, now))

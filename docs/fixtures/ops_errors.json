@@ -1,0 +1,39 @@
+{
+  "fixture": true,
+  "http_status": 200,
+  "invalid_input_400": {
+    "status": 400,
+    "body": {
+      "code": "invalid_input",
+      "error": "event_mode must be live or replay"
+    }
+  },
+  "not_found_404": {
+    "status": 404,
+    "body": {
+      "code": "not_found",
+      "error": "Site not found"
+    }
+  },
+  "live_briefing_not_due_409": {
+    "status": 409,
+    "body": {
+      "code": "not_due",
+      "error": "Live briefings for this site are delivered at 6 PM America/Chicago time; it is 17:30 there. Use event_mode \"replay\" to demonstrate."
+    }
+  },
+  "photo_too_large_413": {
+    "status": 413,
+    "body": {
+      "code": "photo_too_large",
+      "error": "photo must be 5 MB or smaller"
+    }
+  },
+  "database_unavailable_503": {
+    "status": 503,
+    "body": {
+      "error": "DATABASE_URL is not configured. Add your Tiger Data URI to .env.",
+      "code": "database_unavailable"
+    }
+  }
+}
