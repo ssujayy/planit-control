@@ -21,7 +21,8 @@ def fetch_weather(site):
         'latitude': site['latitude'], 'longitude': site['longitude'],
         'current': 'temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,wind_gusts_10m',
         'hourly': 'temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,wind_gusts_10m,soil_moisture_0_to_1cm',
-        'forecast_days': 2, 'timezone': 'UTC', 'timeformat': 'unixtime',
+        # Three UTC days also cover all of tomorrow in the supported US zones.
+        'forecast_days': 3, 'timezone': 'UTC', 'timeformat': 'unixtime',
     }
     req = urllib.request.Request('https://api.open-meteo.com/v1/forecast?' + urllib.parse.urlencode(params), headers={'User-Agent': 'PlanIT-Control-Hackathon/0.1'})
     try:

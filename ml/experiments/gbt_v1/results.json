@@ -1,0 +1,1028 @@
+{
+  "selection": {
+    "selected_tree": "tree_7",
+    "experiments": {
+      "logistic_control": {
+        "max_leaf_nodes": null,
+        "folds": [
+          {
+            "train_start": "2022-01-01",
+            "train_end": "2022-12-31",
+            "training_rows": 19710,
+            "fit_seconds": 0.03248810000150115,
+            "validation_start": "2023-01-01",
+            "validation_end": "2023-06-30",
+            "validation_rows": 9774,
+            "positive_days": 275,
+            "average_precision": 0.12769494949298094
+          },
+          {
+            "train_start": "2022-01-01",
+            "train_end": "2023-06-30",
+            "training_rows": 29484,
+            "fit_seconds": 0.04537549999804469,
+            "validation_start": "2023-07-01",
+            "validation_end": "2023-12-31",
+            "validation_rows": 9936,
+            "positive_days": 145,
+            "average_precision": 0.08355760825947446
+          }
+        ],
+        "pooled_2023": {
+          "rows": 19710,
+          "positive_days": 420,
+          "start_date": "2023-01-01",
+          "end_date": "2023-12-31",
+          "prevalence": 0.0213089802130898,
+          "prevalence_baseline_ap": 0.0213089802130898,
+          "average_precision": 0.10600379243860802,
+          "threshold": 0.05,
+          "precision": 0.12446717817561807,
+          "recall": 0.3476190476190476,
+          "false_alerts": 1027,
+          "false_alerts_per_100_county_days": 5.210553018772197,
+          "flagged_days": 1173,
+          "flagged_percent": 5.951293759512938,
+          "thresholds": [
+            {
+              "threshold": 0.01,
+              "precision": 0.03992299118451718,
+              "recall": 0.9380952380952381,
+              "false_alerts": 9475,
+              "false_alerts_per_100_county_days": 48.072044647387116,
+              "flagged_days": 9869,
+              "flagged_percent": 50.07102993404363
+            },
+            {
+              "threshold": 0.02,
+              "precision": 0.058143939393939394,
+              "recall": 0.7309523809523809,
+              "false_alerts": 4973,
+              "false_alerts_per_100_county_days": 25.230847285641808,
+              "flagged_days": 5280,
+              "flagged_percent": 26.78843226788432
+            },
+            {
+              "threshold": 0.05,
+              "precision": 0.12446717817561807,
+              "recall": 0.3476190476190476,
+              "false_alerts": 1027,
+              "false_alerts_per_100_county_days": 5.210553018772197,
+              "flagged_days": 1173,
+              "flagged_percent": 5.951293759512938
+            },
+            {
+              "threshold": 0.1,
+              "precision": 0.18791946308724833,
+              "recall": 0.13333333333333333,
+              "false_alerts": 242,
+              "false_alerts_per_100_county_days": 1.2278031456113647,
+              "flagged_days": 298,
+              "flagged_percent": 1.5119228817858954
+            },
+            {
+              "threshold": 0.2,
+              "precision": 0.18055555555555555,
+              "recall": 0.030952380952380953,
+              "false_alerts": 59,
+              "false_alerts_per_100_county_days": 0.2993404363267377,
+              "flagged_days": 72,
+              "flagged_percent": 0.365296803652968
+            }
+          ],
+          "per_state": {
+            "AL": {
+              "rows": 4015,
+              "positive_days": 109,
+              "start_date": "2023-01-01",
+              "end_date": "2023-12-31",
+              "prevalence": 0.02714819427148194,
+              "prevalence_baseline_ap": 0.02714819427148194,
+              "average_precision": 0.15097541026492098,
+              "threshold": 0.05,
+              "precision": 0.15639810426540285,
+              "recall": 0.30275229357798167,
+              "false_alerts": 178,
+              "false_alerts_per_100_county_days": 4.433374844333748,
+              "flagged_days": 211,
+              "flagged_percent": 5.255292652552926
+            },
+            "FL": {
+              "rows": 4015,
+              "positive_days": 91,
+              "start_date": "2023-01-01",
+              "end_date": "2023-12-31",
+              "prevalence": 0.02266500622665006,
+              "prevalence_baseline_ap": 0.02266500622665006,
+              "average_precision": 0.08049019766621623,
+              "threshold": 0.05,
+              "precision": 0.09056603773584905,
+              "recall": 0.26373626373626374,
+              "false_alerts": 241,
+              "false_alerts_per_100_county_days": 6.002490660024907,
+              "flagged_days": 265,
+              "flagged_percent": 6.60024906600249
+            },
+            "GA": {
+              "rows": 4015,
+              "positive_days": 68,
+              "start_date": "2023-01-01",
+              "end_date": "2023-12-31",
+              "prevalence": 0.016936488169364883,
+              "prevalence_baseline_ap": 0.016936488169364883,
+              "average_precision": 0.10310021997791792,
+              "threshold": 0.05,
+              "precision": 0.11467889908256881,
+              "recall": 0.36764705882352944,
+              "false_alerts": 193,
+              "false_alerts_per_100_county_days": 4.806973848069738,
+              "flagged_days": 218,
+              "flagged_percent": 5.429638854296389
+            },
+            "LA": {
+              "rows": 4015,
+              "positive_days": 90,
+              "start_date": "2023-01-01",
+              "end_date": "2023-12-31",
+              "prevalence": 0.0224159402241594,
+              "prevalence_baseline_ap": 0.0224159402241594,
+              "average_precision": 0.13649914147319786,
+              "threshold": 0.05,
+              "precision": 0.13584905660377358,
+              "recall": 0.4,
+              "false_alerts": 229,
+              "false_alerts_per_100_county_days": 5.703611457036114,
+              "flagged_days": 265,
+              "flagged_percent": 6.60024906600249
+            },
+            "MS": {
+              "rows": 3650,
+              "positive_days": 62,
+              "start_date": "2023-01-01",
+              "end_date": "2023-12-31",
+              "prevalence": 0.016986301369863014,
+              "prevalence_baseline_ap": 0.016986301369863014,
+              "average_precision": 0.11850255658694636,
+              "threshold": 0.05,
+              "precision": 0.1308411214953271,
+              "recall": 0.45161290322580644,
+              "false_alerts": 186,
+              "false_alerts_per_100_county_days": 5.095890410958904,
+              "flagged_days": 214,
+              "flagged_percent": 5.863013698630137
+            }
+          }
+        }
+      },
+      "tree_7": {
+        "max_leaf_nodes": 7,
+        "folds": [
+          {
+            "train_start": "2022-01-01",
+            "train_end": "2022-12-31",
+            "training_rows": 19710,
+            "fit_seconds": 2.9024600999982795,
+            "validation_start": "2023-01-01",
+            "validation_end": "2023-06-30",
+            "validation_rows": 9774,
+            "positive_days": 275,
+            "average_precision": 0.13119022668118305
+          },
+          {
+            "train_start": "2022-01-01",
+            "train_end": "2023-06-30",
+            "training_rows": 29484,
+            "fit_seconds": 0.42856899999969755,
+            "validation_start": "2023-07-01",
+            "validation_end": "2023-12-31",
+            "validation_rows": 9936,
+            "positive_days": 145,
+            "average_precision": 0.09688147662364441
+          }
+        ],
+        "pooled_2023": {
+          "rows": 19710,
+          "positive_days": 420,
+          "start_date": "2023-01-01",
+          "end_date": "2023-12-31",
+          "prevalence": 0.0213089802130898,
+          "prevalence_baseline_ap": 0.0213089802130898,
+          "average_precision": 0.1177001003851637,
+          "threshold": 0.05,
+          "precision": 0.11911207363291824,
+          "recall": 0.5238095238095238,
+          "false_alerts": 1627,
+          "false_alerts_per_100_county_days": 8.254693049213596,
+          "flagged_days": 1847,
+          "flagged_percent": 9.37087772704211,
+          "thresholds": [
+            {
+              "threshold": 0.01,
+              "precision": 0.06532045654082529,
+              "recall": 0.8857142857142857,
+              "false_alerts": 5323,
+              "false_alerts_per_100_county_days": 27.006595636732623,
+              "flagged_days": 5695,
+              "flagged_percent": 28.893962455606292
+            },
+            {
+              "threshold": 0.02,
+              "precision": 0.08062130177514792,
+              "recall": 0.7785714285714286,
+              "false_alerts": 3729,
+              "false_alerts_per_100_county_days": 18.919330289193304,
+              "flagged_days": 4056,
+              "flagged_percent": 20.578386605783866
+            },
+            {
+              "threshold": 0.05,
+              "precision": 0.11911207363291824,
+              "recall": 0.5238095238095238,
+              "false_alerts": 1627,
+              "false_alerts_per_100_county_days": 8.254693049213596,
+              "flagged_days": 1847,
+              "flagged_percent": 9.37087772704211
+            },
+            {
+              "threshold": 0.1,
+              "precision": 0.15286624203821655,
+              "recall": 0.22857142857142856,
+              "false_alerts": 532,
+              "false_alerts_per_100_county_days": 2.6991374936580415,
+              "flagged_days": 628,
+              "flagged_percent": 3.1861998985286655
+            },
+            {
+              "threshold": 0.2,
+              "precision": 0.19,
+              "recall": 0.04523809523809524,
+              "false_alerts": 81,
+              "false_alerts_per_100_county_days": 0.410958904109589,
+              "flagged_days": 100,
+              "flagged_percent": 0.5073566717402334
+            }
+          ],
+          "per_state": {
+            "AL": {
+              "rows": 4015,
+              "positive_days": 109,
+              "start_date": "2023-01-01",
+              "end_date": "2023-12-31",
+              "prevalence": 0.02714819427148194,
+              "prevalence_baseline_ap": 0.02714819427148194,
+              "average_precision": 0.1420912903946015,
+              "threshold": 0.05,
+              "precision": 0.13165266106442577,
+              "recall": 0.43119266055045874,
+              "false_alerts": 310,
+              "false_alerts_per_100_county_days": 7.7210460772104605,
+              "flagged_days": 357,
+              "flagged_percent": 8.891656288916563
+            },
+            "FL": {
+              "rows": 4015,
+              "positive_days": 91,
+              "start_date": "2023-01-01",
+              "end_date": "2023-12-31",
+              "prevalence": 0.02266500622665006,
+              "prevalence_baseline_ap": 0.02266500622665006,
+              "average_precision": 0.09261726732368675,
+              "threshold": 0.05,
+              "precision": 0.09307359307359307,
+              "recall": 0.4725274725274725,
+              "false_alerts": 419,
+              "false_alerts_per_100_county_days": 10.435865504358656,
+              "flagged_days": 462,
+              "flagged_percent": 11.506849315068493
+            },
+            "GA": {
+              "rows": 4015,
+              "positive_days": 68,
+              "start_date": "2023-01-01",
+              "end_date": "2023-12-31",
+              "prevalence": 0.016936488169364883,
+              "prevalence_baseline_ap": 0.016936488169364883,
+              "average_precision": 0.11419419956785389,
+              "threshold": 0.05,
+              "precision": 0.1239193083573487,
+              "recall": 0.6323529411764706,
+              "false_alerts": 304,
+              "false_alerts_per_100_county_days": 7.571606475716065,
+              "flagged_days": 347,
+              "flagged_percent": 8.642590286425904
+            },
+            "LA": {
+              "rows": 4015,
+              "positive_days": 90,
+              "start_date": "2023-01-01",
+              "end_date": "2023-12-31",
+              "prevalence": 0.0224159402241594,
+              "prevalence_baseline_ap": 0.0224159402241594,
+              "average_precision": 0.14552393546772235,
+              "threshold": 0.05,
+              "precision": 0.13402061855670103,
+              "recall": 0.5777777777777777,
+              "false_alerts": 336,
+              "false_alerts_per_100_county_days": 8.368617683686177,
+              "flagged_days": 388,
+              "flagged_percent": 9.663760896637609
+            },
+            "MS": {
+              "rows": 3650,
+              "positive_days": 62,
+              "start_date": "2023-01-01",
+              "end_date": "2023-12-31",
+              "prevalence": 0.016986301369863014,
+              "prevalence_baseline_ap": 0.016986301369863014,
+              "average_precision": 0.12493129964619287,
+              "threshold": 0.05,
+              "precision": 0.11945392491467577,
+              "recall": 0.5645161290322581,
+              "false_alerts": 258,
+              "false_alerts_per_100_county_days": 7.068493150684931,
+              "flagged_days": 293,
+              "flagged_percent": 8.027397260273972
+            }
+          }
+        }
+      },
+      "tree_15": {
+        "max_leaf_nodes": 15,
+        "folds": [
+          {
+            "train_start": "2022-01-01",
+            "train_end": "2022-12-31",
+            "training_rows": 19710,
+            "fit_seconds": 0.40454160000081174,
+            "validation_start": "2023-01-01",
+            "validation_end": "2023-06-30",
+            "validation_rows": 9774,
+            "positive_days": 275,
+            "average_precision": 0.12811441878556912
+          },
+          {
+            "train_start": "2022-01-01",
+            "train_end": "2023-06-30",
+            "training_rows": 29484,
+            "fit_seconds": 0.5263990000021295,
+            "validation_start": "2023-07-01",
+            "validation_end": "2023-12-31",
+            "validation_rows": 9936,
+            "positive_days": 145,
+            "average_precision": 0.09085472454780494
+          }
+        ],
+        "pooled_2023": {
+          "rows": 19710,
+          "positive_days": 420,
+          "start_date": "2023-01-01",
+          "end_date": "2023-12-31",
+          "prevalence": 0.0213089802130898,
+          "prevalence_baseline_ap": 0.0213089802130898,
+          "average_precision": 0.11370884846215737,
+          "threshold": 0.06,
+          "precision": 0.12098930481283422,
+          "recall": 0.430952380952381,
+          "false_alerts": 1315,
+          "false_alerts_per_100_county_days": 6.671740233384069,
+          "flagged_days": 1496,
+          "flagged_percent": 7.590055809233891,
+          "thresholds": [
+            {
+              "threshold": 0.01,
+              "precision": 0.06856600189933523,
+              "recall": 0.8595238095238096,
+              "false_alerts": 4904,
+              "false_alerts_per_100_county_days": 24.880771182141046,
+              "flagged_days": 5265,
+              "flagged_percent": 26.71232876712329
+            },
+            {
+              "threshold": 0.02,
+              "precision": 0.0844540075309306,
+              "recall": 0.7476190476190476,
+              "false_alerts": 3404,
+              "false_alerts_per_100_county_days": 17.270421106037546,
+              "flagged_days": 3718,
+              "flagged_percent": 18.863521055301877
+            },
+            {
+              "threshold": 0.05,
+              "precision": 0.11494252873563218,
+              "recall": 0.5,
+              "false_alerts": 1617,
+              "false_alerts_per_100_county_days": 8.203957382039574,
+              "flagged_days": 1827,
+              "flagged_percent": 9.269406392694064
+            },
+            {
+              "threshold": 0.06,
+              "precision": 0.12098930481283422,
+              "recall": 0.430952380952381,
+              "false_alerts": 1315,
+              "false_alerts_per_100_county_days": 6.671740233384069,
+              "flagged_days": 1496,
+              "flagged_percent": 7.590055809233891
+            },
+            {
+              "threshold": 0.1,
+              "precision": 0.13006993006993006,
+              "recall": 0.22142857142857142,
+              "false_alerts": 622,
+              "false_alerts_per_100_county_days": 3.1557584982242517,
+              "flagged_days": 715,
+              "flagged_percent": 3.6276002029426686
+            },
+            {
+              "threshold": 0.2,
+              "precision": 0.17880794701986755,
+              "recall": 0.06428571428571428,
+              "false_alerts": 124,
+              "false_alerts_per_100_county_days": 0.6291222729578894,
+              "flagged_days": 151,
+              "flagged_percent": 0.7661085743277524
+            }
+          ],
+          "per_state": {
+            "AL": {
+              "rows": 4015,
+              "positive_days": 109,
+              "start_date": "2023-01-01",
+              "end_date": "2023-12-31",
+              "prevalence": 0.02714819427148194,
+              "prevalence_baseline_ap": 0.02714819427148194,
+              "average_precision": 0.14183621016384024,
+              "threshold": 0.06,
+              "precision": 0.14772727272727273,
+              "recall": 0.3577981651376147,
+              "false_alerts": 225,
+              "false_alerts_per_100_county_days": 5.603985056039851,
+              "flagged_days": 264,
+              "flagged_percent": 6.575342465753424
+            },
+            "FL": {
+              "rows": 4015,
+              "positive_days": 91,
+              "start_date": "2023-01-01",
+              "end_date": "2023-12-31",
+              "prevalence": 0.02266500622665006,
+              "prevalence_baseline_ap": 0.02266500622665006,
+              "average_precision": 0.08383582034856504,
+              "threshold": 0.06,
+              "precision": 0.08629441624365482,
+              "recall": 0.37362637362637363,
+              "false_alerts": 360,
+              "false_alerts_per_100_county_days": 8.966376089663761,
+              "flagged_days": 394,
+              "flagged_percent": 9.813200498132005
+            },
+            "GA": {
+              "rows": 4015,
+              "positive_days": 68,
+              "start_date": "2023-01-01",
+              "end_date": "2023-12-31",
+              "prevalence": 0.016936488169364883,
+              "prevalence_baseline_ap": 0.016936488169364883,
+              "average_precision": 0.10911142989141123,
+              "threshold": 0.06,
+              "precision": 0.12915129151291513,
+              "recall": 0.5147058823529411,
+              "false_alerts": 236,
+              "false_alerts_per_100_county_days": 5.877957658779577,
+              "flagged_days": 271,
+              "flagged_percent": 6.749688667496887
+            },
+            "LA": {
+              "rows": 4015,
+              "positive_days": 90,
+              "start_date": "2023-01-01",
+              "end_date": "2023-12-31",
+              "prevalence": 0.0224159402241594,
+              "prevalence_baseline_ap": 0.0224159402241594,
+              "average_precision": 0.15153007613639713,
+              "threshold": 0.06,
+              "precision": 0.12759643916913946,
+              "recall": 0.4777777777777778,
+              "false_alerts": 294,
+              "false_alerts_per_100_county_days": 7.322540473225405,
+              "flagged_days": 337,
+              "flagged_percent": 8.393524283935243
+            },
+            "MS": {
+              "rows": 3650,
+              "positive_days": 62,
+              "start_date": "2023-01-01",
+              "end_date": "2023-12-31",
+              "prevalence": 0.016986301369863014,
+              "prevalence_baseline_ap": 0.016986301369863014,
+              "average_precision": 0.11664551388434159,
+              "threshold": 0.06,
+              "precision": 0.13043478260869565,
+              "recall": 0.4838709677419355,
+              "false_alerts": 200,
+              "false_alerts_per_100_county_days": 5.47945205479452,
+              "flagged_days": 230,
+              "flagged_percent": 6.301369863013699
+            }
+          }
+        }
+      }
+    },
+    "threshold_method": "Maximum pooled 2023 out-of-fold F1 on 0.01..0.50; lower threshold wins ties",
+    "configuration_method": "Maximum pooled 2023 out-of-fold AP; seven leaves wins ties",
+    "predeclared_evidence_screen_passed": false,
+    "selected_at": "2026-10-17T23:01:14.340315+00:00",
+    "dataset_sha256": "277e4566fcdb420efdf51ac5194bdbd2f4bf51e857b4a93eba4c0ad488c41549",
+    "plan_sha256": "8cdc12c3942b419f021087cebd37b1f5abd7acd078cec3a897597eeddc52703f"
+  },
+  "comparison_2024": {
+    "challenger": {
+      "rows": 19764,
+      "positive_days": 312,
+      "start_date": "2024-01-01",
+      "end_date": "2024-12-31",
+      "prevalence": 0.015786278081360048,
+      "prevalence_baseline_ap": 0.015786278081360048,
+      "average_precision": 0.13452869174494556,
+      "threshold": 0.05,
+      "precision": 0.09873417721518987,
+      "recall": 0.625,
+      "false_alerts": 1780,
+      "false_alerts_per_100_county_days": 9.006274033596439,
+      "flagged_days": 1975,
+      "flagged_percent": 9.99291641368144,
+      "thresholds": [
+        {
+          "threshold": 0.01,
+          "precision": 0.047099731310257624,
+          "recall": 0.9551282051282052,
+          "false_alerts": 6029,
+          "false_alerts_per_100_county_days": 30.50495851042299,
+          "flagged_days": 6327,
+          "flagged_percent": 32.01275045537341
+        },
+        {
+          "threshold": 0.02,
+          "precision": 0.06029579067121729,
+          "recall": 0.8493589743589743,
+          "false_alerts": 4130,
+          "false_alerts_per_100_county_days": 20.89657963974904,
+          "flagged_days": 4395,
+          "flagged_percent": 22.23740133576199
+        },
+        {
+          "threshold": 0.05,
+          "precision": 0.09873417721518987,
+          "recall": 0.625,
+          "false_alerts": 1780,
+          "false_alerts_per_100_county_days": 9.006274033596439,
+          "flagged_days": 1975,
+          "flagged_percent": 9.99291641368144
+        },
+        {
+          "threshold": 0.1,
+          "precision": 0.14089775561097256,
+          "recall": 0.36217948717948717,
+          "false_alerts": 689,
+          "false_alerts_per_100_county_days": 3.4861364096336773,
+          "flagged_days": 802,
+          "flagged_percent": 4.057883019631653
+        },
+        {
+          "threshold": 0.2,
+          "precision": 0.21164021164021163,
+          "recall": 0.1282051282051282,
+          "false_alerts": 149,
+          "false_alerts_per_100_county_days": 0.7538959724752075,
+          "flagged_days": 189,
+          "flagged_percent": 0.9562841530054644
+        }
+      ],
+      "per_state": {
+        "AL": {
+          "rows": 4026,
+          "positive_days": 61,
+          "start_date": "2024-01-01",
+          "end_date": "2024-12-31",
+          "prevalence": 0.015151515151515152,
+          "prevalence_baseline_ap": 0.015151515151515152,
+          "average_precision": 0.10235650672375421,
+          "threshold": 0.05,
+          "precision": 0.09401709401709402,
+          "recall": 0.5409836065573771,
+          "false_alerts": 318,
+          "false_alerts_per_100_county_days": 7.898658718330849,
+          "flagged_days": 351,
+          "flagged_percent": 8.71833084947839
+        },
+        "FL": {
+          "rows": 4026,
+          "positive_days": 77,
+          "start_date": "2024-01-01",
+          "end_date": "2024-12-31",
+          "prevalence": 0.01912568306010929,
+          "prevalence_baseline_ap": 0.01912568306010929,
+          "average_precision": 0.18371138225643593,
+          "threshold": 0.05,
+          "precision": 0.10629067245119306,
+          "recall": 0.6363636363636364,
+          "false_alerts": 412,
+          "false_alerts_per_100_county_days": 10.233482364629905,
+          "flagged_days": 461,
+          "flagged_percent": 11.45057128663686
+        },
+        "GA": {
+          "rows": 4026,
+          "positive_days": 36,
+          "start_date": "2024-01-01",
+          "end_date": "2024-12-31",
+          "prevalence": 0.00894187779433681,
+          "prevalence_baseline_ap": 0.00894187779433681,
+          "average_precision": 0.07853858002638858,
+          "threshold": 0.05,
+          "precision": 0.04922279792746114,
+          "recall": 0.5277777777777778,
+          "false_alerts": 367,
+          "false_alerts_per_100_county_days": 9.115747640337805,
+          "flagged_days": 386,
+          "flagged_percent": 9.587680079483357
+        },
+        "LA": {
+          "rows": 4026,
+          "positive_days": 99,
+          "start_date": "2024-01-01",
+          "end_date": "2024-12-31",
+          "prevalence": 0.02459016393442623,
+          "prevalence_baseline_ap": 0.02459016393442623,
+          "average_precision": 0.23761575949333777,
+          "threshold": 0.05,
+          "precision": 0.1548974943052392,
+          "recall": 0.6868686868686869,
+          "false_alerts": 371,
+          "false_alerts_per_100_county_days": 9.215101838052657,
+          "flagged_days": 439,
+          "flagged_percent": 10.904123199205166
+        },
+        "MS": {
+          "rows": 3660,
+          "positive_days": 39,
+          "start_date": "2024-01-01",
+          "end_date": "2024-12-31",
+          "prevalence": 0.010655737704918032,
+          "prevalence_baseline_ap": 0.010655737704918032,
+          "average_precision": 0.0752842330099589,
+          "threshold": 0.05,
+          "precision": 0.07692307692307693,
+          "recall": 0.6666666666666666,
+          "false_alerts": 312,
+          "false_alerts_per_100_county_days": 8.524590163934427,
+          "flagged_days": 338,
+          "flagged_percent": 9.234972677595628
+        }
+      }
+    },
+    "logistic_control": {
+      "rows": 19764,
+      "positive_days": 312,
+      "start_date": "2024-01-01",
+      "end_date": "2024-12-31",
+      "prevalence": 0.015786278081360048,
+      "prevalence_baseline_ap": 0.015786278081360048,
+      "average_precision": 0.12295043900895444,
+      "threshold": 0.05,
+      "precision": 0.11476664116296863,
+      "recall": 0.4807692307692308,
+      "false_alerts": 1157,
+      "false_alerts_per_100_county_days": 5.854078121837684,
+      "flagged_days": 1307,
+      "flagged_percent": 6.613033798826149,
+      "thresholds": [
+        {
+          "threshold": 0.01,
+          "precision": 0.030036779730281977,
+          "recall": 0.9423076923076923,
+          "false_alerts": 9494,
+          "false_alerts_per_100_county_days": 48.036834648856505,
+          "flagged_days": 9788,
+          "flagged_percent": 49.524387775753894
+        },
+        {
+          "threshold": 0.02,
+          "precision": 0.04727954971857411,
+          "recall": 0.8076923076923077,
+          "false_alerts": 5078,
+          "false_alerts_per_100_county_days": 25.693179518316132,
+          "flagged_days": 5330,
+          "flagged_percent": 26.96822505565675
+        },
+        {
+          "threshold": 0.05,
+          "precision": 0.11476664116296863,
+          "recall": 0.4807692307692308,
+          "false_alerts": 1157,
+          "false_alerts_per_100_county_days": 5.854078121837684,
+          "flagged_days": 1307,
+          "flagged_percent": 6.613033798826149
+        },
+        {
+          "threshold": 0.1,
+          "precision": 0.17536534446764093,
+          "recall": 0.2692307692307692,
+          "false_alerts": 395,
+          "false_alerts_per_100_county_days": 1.9985832827362882,
+          "flagged_days": 479,
+          "flagged_percent": 2.423598461849828
+        },
+        {
+          "threshold": 0.2,
+          "precision": 0.20175438596491227,
+          "recall": 0.14743589743589744,
+          "false_alerts": 182,
+          "false_alerts_per_100_county_days": 0.9208662214126695,
+          "flagged_days": 228,
+          "flagged_percent": 1.153612629022465
+        }
+      ],
+      "per_state": {
+        "AL": {
+          "rows": 4026,
+          "positive_days": 61,
+          "start_date": "2024-01-01",
+          "end_date": "2024-12-31",
+          "prevalence": 0.015151515151515152,
+          "prevalence_baseline_ap": 0.015151515151515152,
+          "average_precision": 0.09571549660059293,
+          "threshold": 0.05,
+          "precision": 0.1,
+          "recall": 0.36065573770491804,
+          "false_alerts": 198,
+          "false_alerts_per_100_county_days": 4.918032786885246,
+          "flagged_days": 220,
+          "flagged_percent": 5.46448087431694
+        },
+        "FL": {
+          "rows": 4026,
+          "positive_days": 77,
+          "start_date": "2024-01-01",
+          "end_date": "2024-12-31",
+          "prevalence": 0.01912568306010929,
+          "prevalence_baseline_ap": 0.01912568306010929,
+          "average_precision": 0.1327292311370666,
+          "threshold": 0.05,
+          "precision": 0.11271676300578035,
+          "recall": 0.5064935064935064,
+          "false_alerts": 307,
+          "false_alerts_per_100_county_days": 7.625434674615002,
+          "flagged_days": 346,
+          "flagged_percent": 8.594138102334824
+        },
+        "GA": {
+          "rows": 4026,
+          "positive_days": 36,
+          "start_date": "2024-01-01",
+          "end_date": "2024-12-31",
+          "prevalence": 0.00894187779433681,
+          "prevalence_baseline_ap": 0.00894187779433681,
+          "average_precision": 0.08784903179596962,
+          "threshold": 0.05,
+          "precision": 0.07834101382488479,
+          "recall": 0.4722222222222222,
+          "false_alerts": 200,
+          "false_alerts_per_100_county_days": 4.967709885742672,
+          "flagged_days": 217,
+          "flagged_percent": 5.3899652260307995
+        },
+        "LA": {
+          "rows": 4026,
+          "positive_days": 99,
+          "start_date": "2024-01-01",
+          "end_date": "2024-12-31",
+          "prevalence": 0.02459016393442623,
+          "prevalence_baseline_ap": 0.02459016393442623,
+          "average_precision": 0.24343616097445436,
+          "threshold": 0.05,
+          "precision": 0.18305084745762712,
+          "recall": 0.5454545454545454,
+          "false_alerts": 241,
+          "false_alerts_per_100_county_days": 5.98609041231992,
+          "flagged_days": 295,
+          "flagged_percent": 7.327372081470442
+        },
+        "MS": {
+          "rows": 3660,
+          "positive_days": 39,
+          "start_date": "2024-01-01",
+          "end_date": "2024-12-31",
+          "prevalence": 0.010655737704918032,
+          "prevalence_baseline_ap": 0.010655737704918032,
+          "average_precision": 0.06309457745707174,
+          "threshold": 0.05,
+          "precision": 0.07860262008733625,
+          "recall": 0.46153846153846156,
+          "false_alerts": 211,
+          "false_alerts_per_100_county_days": 5.7650273224043715,
+          "flagged_days": 229,
+          "flagged_percent": 6.256830601092896
+        }
+      }
+    },
+    "production_logistic": {
+      "rows": 19764,
+      "positive_days": 312,
+      "start_date": "2024-01-01",
+      "end_date": "2024-12-31",
+      "prevalence": 0.015786278081360048,
+      "prevalence_baseline_ap": 0.015786278081360048,
+      "average_precision": 0.12428380395397078,
+      "threshold": 0.05,
+      "precision": 0.13803376365441908,
+      "recall": 0.44551282051282054,
+      "false_alerts": 868,
+      "false_alerts_per_100_county_days": 4.391823517506578,
+      "flagged_days": 1007,
+      "flagged_percent": 5.0951224448492205,
+      "thresholds": [
+        {
+          "threshold": 0.01,
+          "precision": 0.033114084826491266,
+          "recall": 0.9358974358974359,
+          "false_alerts": 8526,
+          "false_alerts_per_100_county_days": 43.13904068002429,
+          "flagged_days": 8818,
+          "flagged_percent": 44.61647439789516
+        },
+        {
+          "threshold": 0.02,
+          "precision": 0.05378074005975638,
+          "recall": 0.75,
+          "false_alerts": 4117,
+          "false_alerts_per_100_county_days": 20.830803481076707,
+          "flagged_days": 4351,
+          "flagged_percent": 22.014774337178707
+        },
+        {
+          "threshold": 0.05,
+          "precision": 0.13803376365441908,
+          "recall": 0.44551282051282054,
+          "false_alerts": 868,
+          "false_alerts_per_100_county_days": 4.391823517506578,
+          "flagged_days": 1007,
+          "flagged_percent": 5.0951224448492205
+        },
+        {
+          "threshold": 0.1,
+          "precision": 0.18159203980099503,
+          "recall": 0.23397435897435898,
+          "false_alerts": 329,
+          "false_alerts_per_100_county_days": 1.664642784861364,
+          "flagged_days": 402,
+          "flagged_percent": 2.0340012143290833
+        },
+        {
+          "threshold": 0.2,
+          "precision": 0.20100502512562815,
+          "recall": 0.1282051282051282,
+          "false_alerts": 159,
+          "false_alerts_per_100_county_days": 0.8044930176077717,
+          "flagged_days": 199,
+          "flagged_percent": 1.0068811981380288
+        }
+      ],
+      "per_state": {
+        "AL": {
+          "rows": 4026,
+          "positive_days": 61,
+          "start_date": "2024-01-01",
+          "end_date": "2024-12-31",
+          "prevalence": 0.015151515151515152,
+          "prevalence_baseline_ap": 0.015151515151515152,
+          "average_precision": 0.09794366957390074,
+          "threshold": 0.05,
+          "precision": 0.1165644171779141,
+          "recall": 0.3114754098360656,
+          "false_alerts": 144,
+          "false_alerts_per_100_county_days": 3.5767511177347244,
+          "flagged_days": 163,
+          "flagged_percent": 4.048683556880278
+        },
+        "FL": {
+          "rows": 4026,
+          "positive_days": 77,
+          "start_date": "2024-01-01",
+          "end_date": "2024-12-31",
+          "prevalence": 0.01912568306010929,
+          "prevalence_baseline_ap": 0.01912568306010929,
+          "average_precision": 0.13507434195164164,
+          "threshold": 0.05,
+          "precision": 0.1417910447761194,
+          "recall": 0.4935064935064935,
+          "false_alerts": 230,
+          "false_alerts_per_100_county_days": 5.7128663686040735,
+          "flagged_days": 268,
+          "flagged_percent": 6.656731246895181
+        },
+        "GA": {
+          "rows": 4026,
+          "positive_days": 36,
+          "start_date": "2024-01-01",
+          "end_date": "2024-12-31",
+          "prevalence": 0.00894187779433681,
+          "prevalence_baseline_ap": 0.00894187779433681,
+          "average_precision": 0.08691005770732806,
+          "threshold": 0.05,
+          "precision": 0.10759493670886076,
+          "recall": 0.4722222222222222,
+          "false_alerts": 141,
+          "false_alerts_per_100_county_days": 3.502235469448584,
+          "flagged_days": 158,
+          "flagged_percent": 3.9244908097367115
+        },
+        "LA": {
+          "rows": 4026,
+          "positive_days": 99,
+          "start_date": "2024-01-01",
+          "end_date": "2024-12-31",
+          "prevalence": 0.02459016393442623,
+          "prevalence_baseline_ap": 0.02459016393442623,
+          "average_precision": 0.24287133858027668,
+          "threshold": 0.05,
+          "precision": 0.21052631578947367,
+          "recall": 0.48484848484848486,
+          "false_alerts": 180,
+          "false_alerts_per_100_county_days": 4.470938897168406,
+          "flagged_days": 228,
+          "flagged_percent": 5.663189269746646
+        },
+        "MS": {
+          "rows": 3660,
+          "positive_days": 39,
+          "start_date": "2024-01-01",
+          "end_date": "2024-12-31",
+          "prevalence": 0.010655737704918032,
+          "prevalence_baseline_ap": 0.010655737704918032,
+          "average_precision": 0.06498267252554131,
+          "threshold": 0.05,
+          "precision": 0.08947368421052632,
+          "recall": 0.4358974358974359,
+          "false_alerts": 173,
+          "false_alerts_per_100_county_days": 4.726775956284153,
+          "flagged_days": 190,
+          "flagged_percent": 5.191256830601093
+        }
+      }
+    }
+  },
+  "cost": {
+    "challenger": {
+      "final_fit_seconds": 0.5744106999991345,
+      "artifact_bytes": 105811,
+      "batch_rows": 19764,
+      "batch_repeats": 5,
+      "single_repeats": 30,
+      "batch_seconds_median": 0.16133669999908307,
+      "single_row_milliseconds_median": 2.108349999616621
+    },
+    "logistic_control": {
+      "final_fit_seconds": 0.047909499997331295,
+      "artifact_bytes": 2488,
+      "batch_rows": 19764,
+      "batch_repeats": 5,
+      "single_repeats": 30,
+      "batch_seconds_median": 0.0022260000005189795,
+      "single_row_milliseconds_median": 0.9399999980814755
+    },
+    "production_logistic": {
+      "final_fit_seconds": null,
+      "artifact_bytes": 2516,
+      "batch_rows": 19764,
+      "batch_repeats": 5,
+      "single_repeats": 30,
+      "batch_seconds_median": 0.004786599998624297,
+      "single_row_milliseconds_median": 0.9098499995161546
+    }
+  },
+  "fit_count": 8,
+  "wall_seconds": 7.365585100000317,
+  "selection_fit_seconds": 4.339833300000464,
+  "protected_hashes": {
+    "ml/artifacts/model.joblib": "ad0f5f4d03561885d0ead33a3f5e0e6b89c93869989a1a9e341d6a932955ccf2",
+    "ml/results.json": "f4a8a91c110c6d0ea23fa762f0add10653527b685eeebd1d73e6601612b4c88c",
+    "ml/output/dataset.csv": "277e4566fcdb420efdf51ac5194bdbd2f4bf51e857b4a93eba4c0ad488c41549"
+  },
+  "artifacts": {
+    "challenger.joblib": "dccd840cad070aed65f71b13902670e1f4abc249c792db143080ab21e2ebed3e",
+    "logistic_reference.joblib": "ba332a3f2c212347155305ce33f37066ed77506e13a019c5ae982e16e05015a5"
+  },
+  "environment": {
+    "python": "3.12.10",
+    "platform": "Windows",
+    "processor": "AMD64 Family 23 Model 96 Stepping 1, AuthenticAMD",
+    "sklearn": "1.8.0",
+    "numpy": "2.3.5",
+    "pandas": "2.2.3",
+    "joblib": "1.5.3",
+    "threads": 1
+  },
+  "recommendation": "Retain production logistic; no application model replacement.",
+  "protected_hash_note": "JSON hashes normalize CRLF to LF; dataset and artifact hashes use exact bytes."
+}
