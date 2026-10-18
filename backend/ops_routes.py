@@ -10,6 +10,7 @@ from flask import Blueprint, current_app, jsonify, request
 from werkzeug.exceptions import RequestEntityTooLarge
 
 from . import replay
+from .briefings import deliver_briefing, due_date, site_local, store_inputs_provider
 from .lightning import HOLD_MINUTES, RADIUS_MILES, STATUS_NOTE, LiveSource, coverage, hold_view, lightning_status, parse_strike, process_strike
 from .ops_common import REPLAY_LABEL, ValidationError, iso, mode_label, parse_event_mode, utc_now
 from .ops_store import PostgresStore
@@ -194,3 +195,40 @@ def resolve(store, report_id):
     if report is None:
         return _not_found('Report')
     return jsonify({'report': report})
+
+
+# Briefings
+
+@ops_bp.get('/api/briefings')
+@with_store
+def list_briefings(store):
+    event_mode = _event_mode()
+    raw = request.args.get('site_id')
+    site_id = _site_id(raw) if raw not in (None, '') else None
+    if site_id is not None and not store.get_site(site_id):
+        return _not_found('Site')
+    rows = store.list_briefings(site_id, event_mode)
+    return jsonify({'site_id': site_id, 'event_mode': event_mode, 'label': mode_label(event_mode),
+                    'briefings': rows, 'count': len(rows), 'as_of': iso(_now())})
+
+
+@ops_bp.post('/api/briefings/generate')
+@with_store
+def generate_briefing_now(store):
+    body = request.get_json(silent=True) or {}
+    event_mode = parse_event_mode(body.get('event_mode'), default='replay')
+    site = store.get_site(_site_id(body.get('site_id')))
+    if not site:
+        return _not_found('Site')
+    now, session = _clock_for(store, event_mode)
+    if event_mode == 'live':
+        delivery = due_date(site, now)
+        if delivery is None:
+            return jsonify({'error': f"Live briefings for this site are delivered at 6 PM {site['timezone']} time; it is "
+                                     f"{site_local(site, now).strftime('%H:%M')} there. Use event_mode \"replay\" to demonstrate.",
+                            'code': 'not_due'}), 409
+    else:
+        delivery = site_local(site, now).date()
+    inputs = store_inputs_provider(store, _live_source(), session)(site, delivery, event_mode, now)
+    briefing, created = deliver_briefing(store, site, delivery, inputs, event_mode, now, trigger='manual')
+    return jsonify({'created': created, 'briefing': briefing}), 201 if created else 200
