@@ -2,14 +2,14 @@
   "fixture": true,
   "http_status": 201,
   "briefing": {
-    "body_text": "SIMULATED REPLAY. Next-day briefing for Deerhaven Generating Station (America/New_York). Delivery date 2026-10-17 at 6:00 PM site-local time; forecast target date 2026-10-18.\n\nTomorrow's forecast\nForecast unavailable: no stored next-day forecast for this site. No forecast values are shown.\n\nToday's evidence\nOfficial alerts: unavailable. The absence of alerts here is not evidence that no warnings exist.\nLightning holds today: 1 hold(s) started, 2 extension(s); latest hold end 18:50 site-local (2026-10-17T22:50:00+00:00).\nUnresolved crew reports (real crew reports, not simulated): 1.\n- wildlife: Alligator seen near the north culvert. (reported 2026-10-17T22:02:00+00:00)\n\nExperimental model index\nExperimental model index: unavailable (no saved prediction for the target date).\n\nMissing data\nMissing: forecast.\nMissing: official alerts.\nMissing: model index.",
+    "body_text": "SIMULATED REPLAY. Next-day briefing for Deerhaven Generating Station (America/New_York). Delivery date 2026-10-17 at 6:00 PM site-local time; forecast target date 2026-10-18.\n\nTomorrow's forecast\nForecast unavailable: no stored next-day forecast for this site. No forecast values are shown.\n\nToday's evidence\nOfficial alerts: unavailable. The absence of alerts here is not evidence that no warnings exist.\nLightning holds today: 1 hold(s) started, 2 extension(s); latest hold end 18:50 site-local (2026-10-17T22:50:00+00:00).\nUnresolved crew reports (real crew reports, not simulated): 1.\n- wildlife: Alligator seen near the north culvert. (reported 2026-10-17T22:02:00+00:00)\n\nExperimental model index\nExperimental model index: unavailable (no saved prediction for the target date).\n\nSuggested planning precautions\nReview active official instructions and the site supervisor’s work plan.\nPlan heat breaks, water and shade under site procedures; inspect wet access routes and crew hazard pins.\nMaintain any active lightning stop-work hold; verify missing monitoring before making work decisions.\n\nMissing data\nMissing: forecast.\nMissing: official alerts.\nMissing: model index.",
     "delivered_at": "2026-10-17T23:20:00+00:00",
     "delivered_local_time": "2026-10-17T19:20:00-04:00",
     "delivery_local_date": "2026-10-17",
     "event_mode": "replay",
     "forecast_target_date": "2026-10-18",
     "generator": "template-v1",
-    "id": "7de41ed6-a444-4511-a20d-5008599a6d9e",
+    "id": "56b9815b-1793-4694-b6bd-4a93ff32fbbb",
     "label": "simulated replay",
     "missing_inputs": [
       "forecast",
@@ -50,6 +50,17 @@
           "Experimental model index: unavailable (no saved prediction for the target date)."
         ],
         "title": "Experimental model index"
+      },
+      {
+        "available": true,
+        "evidence_type": "planning_guidance",
+        "key": "precautions",
+        "lines": [
+          "Review active official instructions and the site supervisor’s work plan.",
+          "Plan heat breaks, water and shade under site procedures; inspect wet access routes and crew hazard pins.",
+          "Maintain any active lightning stop-work hold; verify missing monitoring before making work decisions."
+        ],
+        "title": "Suggested planning precautions"
       },
       {
         "available": true,

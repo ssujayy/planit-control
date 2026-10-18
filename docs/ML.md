@@ -75,6 +75,16 @@ imputer. Inputs must be full local-day aggregates, not current readings.
 
 ## Handoff to A
 
+October 18 integration: `backend/predictions.py` now consumes provider DAILY
+forecasts with each site's IANA timezone and explicit units. It persists today
+and tomorrow separately, including unavailable status, range warnings,
+probability, artifact hash and fitted contributions. The worker registers this
+job by default; the dashboard/inbox present it without overriding official
+warnings. Training-county membership is unknown unless the original verified
+`ml/output/site_counties.json` and matching `manifest.json` are supplied. This
+clone does not contain those artifacts or the historical CSV; the saved results
+have been inspected but not recomputed. See docs/requirements-audit.md.
+
 ```python
 from ml.predict import predict_site
 

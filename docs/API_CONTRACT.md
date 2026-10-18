@@ -1,5 +1,81 @@
 # Foundation API contract
 
+## Compliance integration changes (October 18, 2026)
+
+### Weather/model follow-up fixes
+
+- `planning_weather.precipitation_sum_mm` prefers the provider's complete DAILY
+  rainfall value for the exact target local date and timezone, independently of
+  hourly coverage. Complete hourly sums remain compatible with older snapshots.
+  Hourly precipitation is a preceding-hour sum: fallback integration uses the
+  hours ending 01:00 through next-day 00:00, unlike instantaneous temperature/
+  soil samples at 00:00 through 23:00. No previous day's rain is included.
+  Heat/soil still require every real local-day hour (23/24/25 as applicable).
+- `planning_weather.metrics` adds one record per metric with `status`, `reason`,
+  `source`, `unit`, `expected_hours`, `available_hours`, `retrieved_at` and
+  `target_date`. Unknown inputs stay null with a reason; real zero rainfall is 0.
+  Successful weather snapshots persist the derived next-day `planning_weather`
+  alongside raw hourly and DAILY data in the existing JSON snapshot storage.
+- Today/tomorrow prediction availability now exposes a `reason` and a separate
+  `current_prediction_monitoring`. Dashboard site rows display both daily indices.
+  Neither is called an instantaneous current-weather prediction: the saved
+  model was trained on entire local days, and current readings cannot replace
+  maximum temperature, daily rainfall sum or maximum gust inputs.
+- Weather ingestion and forecast-model inference run together per selected site
+  in a bounded worker callback, so a fresh snapshot does not wait for a separate
+  model rotation. The standalone prediction job remains a repair/retry path.
+  An explicit manual weather refresh also updates that site's saved predictions.
+
+The repository-wide implementation request authorizes A/B/C/D integration in
+this branch. These additive changes supersede the scaffold descriptions below:
+
+- Crew categories retain `wildlife`, `water`, `access`, `fire`, `other`, and add
+  `heat`, `lightning`, `flooding`, `mud` (migration 004). The prior five-category
+  CHECK conflicted with AGENTS.md section 10. Uploads must decode as a complete
+  JPEG, PNG or WebP, up to 5 MiB and 25 million pixels.
+- Report history keeps its existing response and accepts optional `category`,
+  `status=unresolved|resolved`, `q`, `since` (UTC ISO timestamp) filters. Coordinates
+  remain available for map display. Filters never delete resolved records.
+- Weather snapshots add `daily`, `daily_units`, `daily_timezone` and
+  `daily_dates` (site-local ISO dates) from provider DAILY values, with explicit
+  Celsius, mm and km/h. Forecasts cover today and tomorrow in the site's IANA
+  timezone. Hourly/current times remain Unix UTC. Existing fields remain intact.
+- Prediction migration 004 adds status, probability, range warnings and nullable
+  geographic extrapolation. Unavailable predictions persist null scores and a
+  reason. `provenance` retains model artifact, source/retrieval, input values,
+  units, input kind and forecast date. `current_prediction` / `current_model_index`
+  represent today's **full-day forecast**, never a current-instant hazard score.
+  `prediction` / `model_index` retain next-day meaning. Predictions older than
+  30 minutes, derived from failed/stale weather, or unavailable keep stored
+  provenance but expose null displayed scores. No hourly interpolation.
+- Outlook adds `crew_reports_monitoring` and `prediction_monitoring`. Wildlife
+  coverage is crew-reported only; no sightings is not proof of no wildlife.
+- Readiness reports implemented upload/scheduling accurately and distinguishes
+  scheduler implementation from runtime delivery evidence. `requirements_complete`
+  remains false while real strike data and river-specific monitoring are missing.
+- The single worker registers predictions and scheduled briefings by default.
+  Existing explicit factory registration remains accepted without double running
+  built-in jobs. No additional worker process is introduced.
+  `--site-id` restricts all built-in jobs, including briefings, to the requested
+  sites. Available-prediction readiness counts exclude unavailable/stale rows.
+- Migration 005 stores USGS NHD stream/river proximity context. The single
+  worker queries NHD flowlines (`ftype=460`) intersecting a 1 km site buffer,
+  caching successful context for 30 days and retrying failed requests. Outlook's
+  `river_proximity` records the method/radius/source/features/retrieval and a
+  separate monitoring state. No match means no mapped stream in that radius,
+  never verified absence of flood exposure. This is centerline context, not a
+  floodplain or river gauge. `flood_advisory` combines fresh context with complete
+  modeled rainfall over the latest completed 18:00–06:00 local night. At least
+  25 mm AND a nearby stream yields `active:true`, stable `id`, reason, source,
+  severity `advisory`, action and event time. Unknown inputs yield `active:null`.
+  This is an illustrative rainfall/location rule, not an official warning or
+  ML output. Current hourly snapshots add `past_days=2` for that modeled proxy,
+  including before 06:00 when the latest completed window begins two days ago.
+- `POST /api/briefings/preview`, body `{site_id}`, builds an unpersisted live-fact
+  preview before 18:00. It returns `{preview:true, delivered:false, briefing}`;
+  it cannot reserve or suppress the scheduled delivery. Existing replay/manual
+  delivery stays isolated. No external messaging channel exists.
+
 Dates: UTC ISO 8601 unless explicitly marked as Unix seconds. Unknown values use null, never zero. Every component must distinguish live provider data, cached data, and demo file storage.
 
 ## Implemented now

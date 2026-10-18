@@ -7,9 +7,7 @@ from backend.reports import PHOTO_LIMIT
 from ops_support import SITES, Clock, make_client, site
 
 DEERHAVEN = site(663)
-JPEG = b'\xff\xd8\xff\xe0' + b'\x00' * 64 + b'\xff\xd9'
-PNG = b'\x89PNG\r\n\x1a\n' + b'\x00' * 64
-WEBP = b'RIFF\x24\x00\x00\x00WEBPVP8 ' + b'\x00' * 32
+from image_support import JPEG, PNG, WEBP
 
 
 @pytest.fixture
@@ -67,11 +65,25 @@ def test_note_is_required_and_limited(client):
     assert post(client, note='x' * 2000).status_code == 201
 
 
-def test_a_categories_only(client):
-    for category in ('wildlife', 'water', 'access', 'fire', 'other'):
+def test_required_and_legacy_categories(client):
+    for category in ('wildlife', 'water', 'access', 'fire', 'other', 'heat', 'lightning', 'flooding', 'mud'):
         assert post(client, category=category).status_code == 201
-    for retired in ('heat', 'lightning', 'flooding', 'mud'):
-        assert post(client, category=retired).status_code == 400
+    assert post(client, category='invalid').status_code == 400
+
+
+@pytest.mark.parametrize('photo', [b'\x89PNG\r\n\x1a\n' + b'\x00'*64, JPEG[:25], PNG[:-20]])
+def test_corrupt_images_rejected(client, photo):
+    assert post(client, photo).status_code == 400
+
+
+def test_history_filters_keep_resolved_records(client):
+    first = post(client, note='Alligator near culvert').json['report']
+    post(client, category='mud', note='Rutted ground')
+    client.post(f"/api/reports/{first['id']}/resolve")
+    filtered = client.get('/api/reports?site_id=663&category=wildlife&status=resolved&q=culvert').json
+    assert [row['id'] for row in filtered['history']] == [first['id']]
+    assert client.get('/api/reports?site_id=663&since=bad').status_code == 400
+    assert client.get('/api/reports?site_id=663&status=bad').status_code == 400
 
 
 def test_oversize_photo_rejected(client):

@@ -2,6 +2,57 @@
 
 ## Scope and ownership
 
+### October 18, 2026, about 2:40 AM ET — forecast/model follow-up
+
+Human requested missing current/tomorrow indices and next-day heat/soil/rainfall
+fixes, then authorized migrating private configuration and retiring old servers.
+Older examples contained placeholders; migrated the older working private
+configuration into this checkout's ignored `.env` without displaying values.
+Applied 003/004/005, preserving 55 plants. No secret was added to a template.
+
+Updated API_CONTRACT first, then planning_weather.py, weather.py, predictions.py,
+outlook.py, worker.py, app.py, dashboard/model/map presentation and focused tests.
+DAILY rain is independent of hourly availability and recorded in saved JSON;
+legacy rain integration follows preceding-hour intervals. Missing heat/soil
+explains absent local-day values. Weather and inference are synchronized per
+site; midnight cache refresh and concurrent-read freshness fixes prevent missing
+forecasts and hidden fresh predictions. Both daily scores are visible.
+Instantaneous ML is unsupported by the existing daily model.
+
+Real worker pass: 55 weather successes, 110 available predictions, 55 NWS and 55
+USGS successes; no briefings due. Stored Outlook confirms all 55 today/tomorrow
+indices and all three tomorrow fields. Full suite: 184 passed, 1 skipped;
+frontend: 15 passed; build, fixture Chromium and real-data Chromium desktop/mobile
+passed. Old listeners replaced with this checkout on 5000/5173; one current worker
+remains active. Local logs/PIDs are ignored under `.runtime/`. No commit, push,
+merge, deployment, other-owner conversation or delegation.
+
+### October 18, 2026, about 2:15 AM ET — repository-wide compliance integration
+
+The human requested audit, implementation and verification across the repository
+on a feature branch. Started from clean/up-to-date main; branch is
+`feature/challenge-compliance`. No other agents/owners were contacted or
+delegated to; no conversations are claimed. API_CONTRACT was updated before
+changing interfaces. The real mismatch was the five-category report CHECK versus
+the shared heat/lightning/flooding/mud requirement; migration 004 preserves the
+legacy values and adds the required ones. Migration 005 adds USGS context.
+
+Changes span A's worker/repositories/migrations, operational validation and
+preview/filter routes, DAILY forecast-to-model inference, React reporting/inbox
+components and coverage, tests/fixtures and setup/audit/demo docs. Existing plant
+data, trained artifact/results and applied migrations were preserved. New root
+dependencies are Pillow==12.0.0 and tzdata==2025.2. Details, actual commands and
+results are in docs/requirements-audit.md and docs/SETUP_STATUS.md.
+
+Default checks, frontend build/behavior tests, bounded real Open-Meteo/NWS/USGS
+and saved-model inference, fixture browser flows, and actual-app inventory
+desktop/mobile checks passed. DB opt-in checks fail because this checkout lacks
+DATABASE_URL. Port 5000 was an older app; this branch was verified on 5127.
+Shared migration application, real report/briefing persistence, 55-site worker
+operation and live strikes remain unverified. No .env content read, no shared DB
+writes, commit, push, merge or deployment. Do not equate the fixture or read-only
+provider checks with durable integration. This entry supplements the older log.
+
 Assigned explicitly by the human in this session on October 17, 2026.
 The latest assignment supersedes the older letters in docs/WORKSTREAMS.md:
 A backend/database/worker, B lightning/reports/briefings, C historical ML,

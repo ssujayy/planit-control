@@ -57,6 +57,9 @@ def _forecast_section(inputs, target, missing):
                 'lines': ['Forecast unavailable: no stored next-day forecast for this site. No forecast values are shown.']}
     lines.append(f"Forecast from {forecast.get('source') or 'unknown source'}, valid for {forecast.get('valid_date')} "
                  f"(site-local day), retrieved {forecast.get('retrieved_at') or 'at an unknown time'}.")
+    if forecast.get('stale'):
+        missing.append('fresh forecast')
+        lines.append('STALE forecast: retained values do not establish current forecast conditions.')
     if forecast.get('valid_date') != target:
         lines.append(f'Note: this forecast is not for the target date {target}.')
         missing.append('forecast for target date')
@@ -67,12 +70,21 @@ def _forecast_section(inputs, target, missing):
             missing.append(f'forecast {key}')
         else:
             lines.append(f"{label}: {entry['value']} {entry.get('unit') or ''}".rstrip())
+    periods = forecast.get('hazardous_periods')
+    if periods:
+        lines.append('Illustrative forecast planning periods (not official warnings):')
+        lines.extend(f"- {period['local_time']}: {', '.join(period['signals'])}." for period in periods)
+    elif periods is not None:
+        lines.append('No configured planning threshold exceeded in available hourly forecasts; other hazards may exist.')
     return {'key': 'forecast', 'title': "Tomorrow's forecast", 'evidence_type': 'forecast', 'available': True, 'lines': lines}
 
 
 def _evidence_section(site, inputs, missing):
     lines = []
     alerts = inputs.get('active_alerts')
+    if inputs.get('alerts_monitoring') == 'STALE':
+        missing.append('fresh official alerts')
+        lines.append('Official monitoring is STALE; retained warnings may be incomplete.')
     if alerts is None:
         missing.append('official alerts')
         lines.append('Official alerts: unavailable. The absence of alerts here is not evidence that no warnings exist.')
@@ -82,6 +94,12 @@ def _evidence_section(site, inputs, missing):
         for alert in alerts:
             lines.append(f"Official alert: {alert.get('event')} ({alert.get('source') or 'official source'}), "
                          f"expires {alert.get('expires') or 'unknown'}.")
+    advisory = inputs.get('flood_advisory') or {}
+    if advisory.get('active'):
+        lines.append('Illustrative rainfall/stream advisory: ' + advisory['reason'])
+        lines.append(advisory['recommended_action'])
+    for layer in inputs.get('unavailable_layers') or []:
+        missing.append(layer)
     holds = inputs.get('lightning_today') or []
     if holds:
         started = sum(1 for e in holds if e['type'] == 'lightning_hold_started')
@@ -134,6 +152,7 @@ def _model_section(inputs, target, missing):
     if model.get('outside_training_range'):
         lines.append(f"Inputs outside the training range: {', '.join(model['outside_training_range'])}.")
     lines.append(f"Model version {model.get('model_version') or 'unknown'}.")
+    lines.append('Historical observed-weather evaluation does not establish next-day forecast performance.')
     return {'key': 'model', 'title': title, 'evidence_type': 'experimental_model_index', 'available': True, 'lines': lines}
 
 
@@ -143,6 +162,10 @@ def generate_briefing(site, delivery_local_date, inputs, event_mode, now, trigge
     target = (delivery + timedelta(days=1)).isoformat()
     missing = []
     sections = [_forecast_section(inputs, target, missing), _evidence_section(site, inputs, missing), _model_section(inputs, target, missing)]
+    sections.append({'key': 'precautions', 'title': 'Suggested planning precautions', 'evidence_type': 'planning_guidance',
+                     'available': True, 'lines': ['Review active official instructions and the site supervisor’s work plan.',
+                     'Plan heat breaks, water and shade under site procedures; inspect wet access routes and crew hazard pins.',
+                     'Maintain any active lightning stop-work hold; verify missing monitoring before making work decisions.']})
     sections.append({'key': 'missing_data', 'title': 'Missing data', 'evidence_type': 'missing_data', 'available': True,
                      'lines': [f'Missing: {item}.' for item in missing] or ['No missing inputs among those this briefing uses.']})
     prefix = 'SIMULATED REPLAY. ' if event_mode == 'replay' else ''
@@ -160,7 +183,8 @@ def generate_briefing(site, delivery_local_date, inputs, event_mode, now, trigge
         'id': f"{event_mode}:{site['id']}:{delivery.isoformat()}", 'site_id': site['id'], 'site_name': site['name'],
         'timezone': site['timezone'], 'event_mode': event_mode, 'label': mode_label(event_mode), 'trigger': trigger,
         'delivery_local_date': delivery.isoformat(), 'scheduled_local_time': DELIVERY_TIME.strftime('%H:%M'),
-        'forecast_target_date': target, 'delivered_at': iso(now), 'delivered_local_time': site_local(site, now).isoformat(),
+        'forecast_target_date': target, 'delivered_at': iso(now) if trigger != 'preview' else None,
+        'delivered_local_time': site_local(site, now).isoformat() if trigger != 'preview' else None,
         'generator': GENERATOR, 'rewrite_status': status, 'sections': sections, 'missing_inputs': missing,
         'body_text': body, 'rewritten_text': rewritten, 'note': NOTE,
     }
@@ -180,11 +204,12 @@ def _outlook_facts(row):
     """Map one A Outlook row (serialized) to briefing inputs. Absent values stay None (shown as unavailable)."""
     if row is None:
         return {}
-    facts = {}
+    facts = {'unavailable_layers': row.get('unavailable_layers'), 'flood_advisory': row.get('flood_advisory')}
     planning, weather = row.get('planning_weather') or {}, row.get('weather') or {}
     if weather:
         facts['forecast'] = {
             'source': planning.get('source'), 'valid_date': planning.get('target_date'), 'retrieved_at': weather.get('fetched_at'),
+            'stale': weather.get('stale', False), 'hazardous_periods': planning.get('hazardous_periods'),
             'values': {key: {'value': planning.get(key), 'unit': unit} for key, unit in PLANNING_UNITS.items()}}
     monitoring = (row.get('official_alerts_monitoring') or {}).get('state')
     if monitoring in ('COMPLETE', 'STALE') and row.get('alerts') is not None:
@@ -195,8 +220,9 @@ def _outlook_facts(row):
         provenance = prediction.get('provenance') or {}
         facts['model'] = {'model_index': prediction.get('score'), 'target_date': prediction.get('valid_date'),
                           'model_version': prediction.get('model_version'),
-                          'outside_training_range': provenance.get('outside_training_range') or [],
-                          'outside_training_counties': provenance.get('outside_training_counties')}
+                          'outside_training_range': prediction.get('outside_training_range') or provenance.get('outside_training_range') or [],
+                          'outside_training_counties': prediction.get('outside_training_counties', provenance.get('outside_training_counties')),
+                          'reason': provenance.get('reason') or ('Stored prediction is stale.' if prediction.get('stale') else None)}
     return facts
 
 
@@ -249,13 +275,14 @@ def run_due_briefings(now, store, sites=None, inputs_provider=None, event_mode='
     return results
 
 
-def scheduled_briefings():
+def scheduled_briefings(*, site_ids=None):
     """Worker callback (no arguments): live briefings for every site whose local 6 PM has passed."""
     from .ops_store import PostgresStore
     from .outlook import build_outlook
     store, now = PostgresStore(), utc_now()
     provider = store_inputs_provider(store, outlook=lambda at: build_outlook('live', now=at))
-    results = run_due_briefings(now, store, inputs_provider=provider)
+    sites = None if site_ids is None else [site for site in store.list_sites() if site['id'] in site_ids]
+    results = run_due_briefings(now, store, sites=sites, inputs_provider=provider)
     return {'created': sum(r['created'] for r in results), 'attempted': len(results)}
 
 

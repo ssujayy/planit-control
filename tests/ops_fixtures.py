@@ -10,7 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = ROOT / 'docs' / 'fixtures'
-PNG = b'\x89PNG\r\n\x1a\n' + b'\x00' * 64
+from image_support import PNG
 
 
 def build_responses(make_client):

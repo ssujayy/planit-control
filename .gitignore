@@ -2,8 +2,10 @@
 .env.*
 !.env.example
 .venv/
+.runtime/
 __pycache__/
 .pytest_cache/
+pytest-cache-files-*/
 *.pyc
 frontend/node_modules/
 frontend/dist/

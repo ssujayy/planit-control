@@ -10,7 +10,8 @@ import { fileURLToPath } from 'node:url';
 import { floodAlert, siteRow } from './fixtures.mjs';
 
 const frontend = fileURLToPath(new URL('../', import.meta.url));
-const live = process.argv[2] === '--live' ? process.argv[3] : null;
+const inventory = process.argv[2] === '--inventory';
+const live = ['--live', '--inventory'].includes(process.argv[2]) ? process.argv[3] : null;
 const browser = process.env.PLANIT_BROWSER || [
   'C:/Program Files/Google/Chrome/Application/chrome.exe',
   'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
@@ -21,9 +22,15 @@ const hold = expiration => ({ site_id: 1, hold_until: new Date(expiration).toISO
 const model = siteRow(3, started);
 model.prediction = { site_id: 3, valid_date: model.planning_weather.target_date, model_version: 'TEST-MODEL', feature_version: 'TEST-FEATURES', score: 9, computed_at: new Date(started).toISOString(), provenance: { model_artifact: 'TEST-ARTIFACT' }, evidence_type: 'experimental_prediction', label: 'experimental model index' };
 model.model_index = 9;
+model.current_prediction = { ...model.prediction, score: 4.25,
+  valid_date: new Intl.DateTimeFormat('en-CA', { timeZone: model.site.timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(started)) };
+model.current_model_index = 4.25;
 model.unavailable_layers = model.unavailable_layers.filter(layer => layer !== 'model');
 const rows = [siteRow(1, started, { lightning_hold: hold(started + 60000) }), siteRow(2, started, { alerts: [floodAlert(started)] }), model];
+rows[1].planning_weather = { ...rows[1].planning_weather, heat_index_max_f: 105.9, precipitation_sum_mm: 29, soil_moisture_max_m3_m3: .55 };
 let fail = false;
+const reports = [];
+const photo = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jG2QAAAAASUVORK5CYII=', 'base64');
 const requests = [];
 const server = createServer(async (request, response) => {
   try {
@@ -35,6 +42,34 @@ const server = createServer(async (request, response) => {
         const upstream = await fetch(live + request.url);
         response.writeHead(upstream.status); response.end(await upstream.text()); return;
       }
+      if (url.pathname === '/api/reports' && request.method === 'POST') {
+        const chunks = []; for await (const chunk of request) chunks.push(chunk);
+        const form = await new Request('http://localhost', { method: 'POST', headers: request.headers, body: Buffer.concat(chunks) }).formData();
+        assert.ok(form.get('photo').size > 0);
+        const siteId = Number(form.get('site_id'));
+        const report = { id: 'test-report-' + reports.length, site_id: siteId, category: form.get('category'), note: form.get('note'),
+          latitude: Number(form.get('latitude')), longitude: Number(form.get('longitude')), status: 'unresolved',
+          observed_at: new Date().toISOString(), photo_url: '/api/reports/fixture/photo' };
+        reports.unshift(report); rows.find(row => row.site.id === siteId).unresolved_reports.push(report);
+        response.writeHead(201); response.end(JSON.stringify({ report })); return;
+      }
+      if (url.pathname === '/api/reports') {
+        const history = reports.filter(report => report.site_id === Number(url.searchParams.get('site_id'))
+          && (!url.searchParams.get('status') || report.status === url.searchParams.get('status'))
+          && (!url.searchParams.get('category') || report.category === url.searchParams.get('category'))
+          && report.note.includes(url.searchParams.get('q') || ''));
+        response.end(JSON.stringify({ history, counts: { total: history.length } })); return;
+      }
+      if (/^\/api\/reports\/.+\/resolve$/.test(url.pathname)) {
+        const report = reports.find(report => report.id === url.pathname.split('/')[3]);
+        report.status = 'resolved';
+        rows.find(row => row.site.id === report.site_id).unresolved_reports = [];
+        response.end(JSON.stringify({ report })); return;
+      }
+      if (/^\/api\/reports\/.+\/photo$/.test(url.pathname)) { response.setHeader('Content-Type', 'image/png'); response.end(photo); return; }
+      if (url.pathname === '/api/briefings') { response.end(JSON.stringify({ briefings: [], count: 0 })); return; }
+      if (url.pathname === '/api/briefings/preview') { response.end(JSON.stringify({ preview: true, delivered: false,
+        briefing: { body_text: 'TEST FIXTURE preview. No delivery.', forecast_target_date: model.planning_weather.target_date } })); return; }
       const demo = url.searchParams.get('mode') === 'demo';
       if (fail && !demo && url.pathname === '/api/outlook') {
         response.writeHead(503); response.end(JSON.stringify({ error: 'TEST FIXTURE database interruption', code: 'database_unavailable' })); return;
@@ -46,7 +81,7 @@ const server = createServer(async (request, response) => {
           briefings: { storage_ready: true, scheduled_delivery_implemented: false }, model: { storage_ready: true, saved_next_day_predictions: 1 } })); return;
       }
       if (url.pathname === '/api/outlook') {
-        const sites = demo ? rows.map(row => ({ ...row, rank: null, weather: null, weather_monitoring: { state: 'UNAVAILABLE' }, official_alerts_monitoring: { state: 'UNAVAILABLE', fetched_at: null }, alerts: null, lightning_hold: null, model_index: null, prediction: null, planning_weather: null, coverage: 'UNAVAILABLE', hazard_state: null })) : rows;
+        const sites = demo ? rows.map(row => ({ ...row, rank: null, weather: null, weather_monitoring: { state: 'UNAVAILABLE' }, official_alerts_monitoring: { state: 'UNAVAILABLE', fetched_at: null }, alerts: null, lightning_hold: null, model_index: null, prediction: null, current_prediction: null, current_model_index: null, planning_weather: null, coverage: 'UNAVAILABLE', hazard_state: null })) : rows;
         response.end(JSON.stringify({ storage_mode: demo ? 'demo' : 'live', event_mode: 'live', as_of: new Date().toISOString(), count: sites.length, ranking_status: demo ? 'not_implemented' : 'evidence_based', weather_freshness_seconds: 1800, sites })); return;
       }
       response.writeHead(404); response.end(JSON.stringify({ error: 'Endpoint not implemented' })); return;
@@ -111,16 +146,47 @@ try {
   await command('Runtime.enable'); await command('Page.enable');
   await command('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1100, deviceScaleFactor: 1, mobile: false });
   await command('Page.navigate', { url: 'http://127.0.0.1:' + server.address().port });
+  async function selectInventory() {
+    await waitFor("!!document.querySelector('.mode select')");
+    await evaluate("const choice = document.querySelector('.mode select'); choice.value = 'demo'; choice.dispatchEvent(new Event('change', { bubbles: true }));");
+  }
+  if (inventory) await selectInventory();
   await waitFor("document.querySelectorAll('.sites button').length === " + (live ? 55 : 3), live ? 25000 : 12000);
-  assert.equal(await evaluate("document.querySelector('.mode select').value"), 'live');
+  assert.equal(await evaluate("document.querySelector('.mode select').value"), inventory ? 'demo' : 'live');
   assert.equal(await evaluate("!!document.querySelector('.leaflet-marker-icon')"), true);
   assert.equal(await evaluate('document.documentElement.scrollWidth <= innerWidth + 1'), true);
   assert.equal(await evaluate("document.body.innerText.includes('Foundation build') || document.body.innerText.includes('Fetch current weather')"), false);
-  if (live) {
-    assert.equal(await evaluate("document.querySelector('#model').innerText.includes('No saved next-day prediction')"), true);
-    assert.equal(await evaluate("document.querySelector('#briefings').textContent.includes('Delivery unavailable')"), true);
-    console.log('Live Tiger Data: 55 sites, Leaflet map, absent predictions and briefing delivery shown.');
+  if (inventory) {
+    assert.equal(await evaluate("document.querySelector('#reports').textContent.includes('File inventory has no report storage')"), true);
+    assert.equal(await evaluate("!!document.querySelector('#reports form')"), false);
+    console.log('Actual Flask app: 55 real inventory sites, unavailable monitoring and disabled shared writes verified.');
+  } else if (live) {
+    await waitFor("!!document.querySelector('#reports form') && !!document.querySelector('#briefings button')");
+    assert.equal(await evaluate("[...document.querySelectorAll('.sites button .today-model')].filter(node => !node.textContent.includes('Unavailable')).length"), 55);
+    assert.equal(await evaluate("[...document.querySelectorAll('.sites button .tomorrow-model')].filter(node => !node.textContent.includes('Unavailable')).length"), 55);
+    for (const position of [0, 1]) {
+      const expectedName = await evaluate(`document.querySelectorAll('.sites button')[${position}].querySelector('.queue-name strong').textContent`);
+      await evaluate(`document.querySelectorAll('.sites button')[${position}].click()`);
+      await waitFor("document.querySelector('#selected-site-title')?.textContent === " + JSON.stringify(expectedName) + " && !document.querySelector('.today-index').textContent.includes('Unavailable')");
+      assert.equal(await evaluate("[...document.querySelectorAll('.weather-grid > div')].filter(node => node.querySelector('small')?.textContent.startsWith('Tomorrow')).every(node => !node.querySelector('strong').textContent.includes('Unavailable'))"), true);
+    }
+    console.log('Live Tiger Data: all 55 today/tomorrow indices, three complete tomorrow metrics, site switching, map, reports and inbox verified.');
   } else {
+    await waitFor("!!document.querySelector('#reports form') && !!document.querySelector('#reports .leaflet-marker-icon')");
+    await evaluate(`(() => {
+      const form = document.querySelector('#reports form');
+      form.querySelector('textarea').value = 'TEST FIXTURE pinned wildlife sighting';
+      const transfer = new DataTransfer(); transfer.items.add(new File([Uint8Array.from(atob(${JSON.stringify(photo.toString('base64'))}), char => char.charCodeAt(0))], 'test.png', { type: 'image/png' }));
+      form.querySelector('[name=photo]').files = transfer.files;
+      form.requestSubmit();
+    })()`);
+    await waitFor("document.querySelector('.history-report')?.textContent.includes('pinned wildlife sighting')");
+    assert.equal(reports.length, 1); assert.equal(reports[0].latitude, rows[0].site.latitude);
+    await evaluate("document.querySelector('.history-report button').click()");
+    await waitFor("document.querySelector('.history-report')?.textContent.includes('Resolved')");
+    await evaluate("document.querySelector('#briefings button').click()");
+    await waitFor("document.querySelector('.briefing-record')?.textContent.includes('not delivered')");
+    console.log('Report form submission, map pin, shared history, resolution and unpersisted briefing preview passed with isolated HTTP fixtures.');
     assert.equal(await evaluate("document.querySelector('.sites button strong').textContent"), 'Fixture plant 1');
     const initialCountdown = await evaluate("document.querySelector('.countdown').textContent");
     assert.match(initialCountdown, /^0[01]:\d{2}$/);
@@ -130,8 +196,12 @@ try {
     await evaluate("[...document.querySelectorAll('.sites button')].find(button => button.innerText.includes('Fixture plant 2')).click()");
     await waitFor("document.querySelector('#selected-site-title').textContent === 'Fixture plant 2'");
     assert.equal(await evaluate("document.querySelector('.official-alert').innerText.includes('Flood Warning')"), true);
+    assert.equal(await evaluate("[...document.querySelectorAll('.weather-grid > div')].find(node => node.querySelector('small')?.textContent.includes('forecast rainfall')).querySelector('strong').textContent"), '29 mm');
+    assert.equal(await evaluate("[...document.querySelectorAll('.weather-grid > div')].find(node => node.querySelector('small')?.textContent.includes('shallow soil moisture')).querySelector('strong').textContent"), '0.55 m³/m³');
     await evaluate("[...document.querySelectorAll('.sites button')].find(button => button.innerText.includes('Fixture plant 3')).click()");
     await waitFor("document.querySelector('.model-score').textContent.includes('9.0')");
+    assert.equal(await evaluate("[...document.querySelectorAll('.sites button')].find(button => button.innerText.includes('Fixture plant 3')).querySelector('.today-model').textContent.includes('4.25')"), true);
+    assert.equal(await evaluate("document.querySelector('.today-index').textContent.includes('4.25')"), true);
     rows[0].lightning_hold = hold(Date.now() + 1800000); rows[2].prediction.score = 0; rows[2].model_index = 0;
     console.log('Checking the next automatic poll for hold extension and a saved zero score…');
     await waitFor("document.querySelector('.model-score').textContent.includes('0.0')", 20000);
@@ -155,6 +225,7 @@ try {
   }
   await command('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
   await command('Page.reload');
+  if (inventory) await selectInventory();
   await waitFor("document.querySelectorAll('.sites button').length === " + (live ? 55 : 3), live ? 25000 : 12000);
   assert.equal(await evaluate('document.documentElement.scrollWidth <= innerWidth + 1'), true, 'Mobile layout overflows horizontally.');
   await screenshot(live ? 'live-mobile' : 'fixture-mobile');

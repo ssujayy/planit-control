@@ -42,7 +42,7 @@ export default function SiteMap({ sites, selectedId, onSelect }) {
         keyboard: false, zIndexOffset: selected ? 1000 : 0,
       });
       const text = document.createElement('span');
-      text.textContent = `${site.attention_rank ? `#${site.attention_rank} · ` : ''}${site.name} · ${HAZARD_LABELS[state]} · ${site.coverage_label ?? 'Coverage unavailable'}`;
+      text.textContent = `${site.attention_rank ? `#${site.attention_rank} · ` : ''}${site.name} · ${HAZARD_LABELS[state]} · ${site.model_label ?? ''} · ${site.coverage_label ?? 'Coverage unavailable'}`;
       marker.bindTooltip(text).on('click', () => select.current(site.id));
       marker.addTo(layer.current);
     });
