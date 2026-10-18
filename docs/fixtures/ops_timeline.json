@@ -36,13 +36,13 @@
           "details": {
             "category": "wildlife",
             "has_photo": true,
-            "report_id": "b5de736f-e56d-46e0-be9d-dc59d5bc8190"
+            "report_id": "01b08a6c-d428-4641-895b-32dc97265c8d"
           },
           "event_mode": "live",
-          "id": "live:report:b5de736f-e56d-46e0-be9d-dc59d5bc8190:created",
+          "id": "live:report:01b08a6c-d428-4641-895b-32dc97265c8d:created",
           "occurred_at": "2026-10-17T22:02:00+00:00",
           "ref_key": {
-            "id": "b5de736f-e56d-46e0-be9d-dc59d5bc8190"
+            "id": "01b08a6c-d428-4641-895b-32dc97265c8d"
           },
           "ref_table": "crew_reports",
           "site_id": 663,
@@ -54,13 +54,13 @@
           "details": {
             "category": "access",
             "has_photo": true,
-            "report_id": "cf9c5b30-1067-411c-b03f-65c04c16b8a7"
+            "report_id": "4ca767a7-aed5-4e1a-892b-70f37fa37448"
           },
           "event_mode": "live",
-          "id": "live:report:cf9c5b30-1067-411c-b03f-65c04c16b8a7:created",
+          "id": "live:report:4ca767a7-aed5-4e1a-892b-70f37fa37448:created",
           "occurred_at": "2026-10-17T22:03:00+00:00",
           "ref_key": {
-            "id": "cf9c5b30-1067-411c-b03f-65c04c16b8a7"
+            "id": "4ca767a7-aed5-4e1a-892b-70f37fa37448"
           },
           "ref_table": "crew_reports",
           "site_id": 663,
@@ -72,13 +72,13 @@
           "details": {
             "category": "access",
             "has_photo": true,
-            "report_id": "cf9c5b30-1067-411c-b03f-65c04c16b8a7"
+            "report_id": "4ca767a7-aed5-4e1a-892b-70f37fa37448"
           },
           "event_mode": "live",
-          "id": "live:report:cf9c5b30-1067-411c-b03f-65c04c16b8a7:resolved",
+          "id": "live:report:4ca767a7-aed5-4e1a-892b-70f37fa37448:resolved",
           "occurred_at": "2026-10-17T22:04:00+00:00",
           "ref_key": {
-            "id": "cf9c5b30-1067-411c-b03f-65c04c16b8a7"
+            "id": "4ca767a7-aed5-4e1a-892b-70f37fa37448"
           },
           "ref_table": "crew_reports",
           "site_id": 663,
@@ -156,7 +156,7 @@
         },
         {
           "details": {
-            "briefing_id": "7de41ed6-a444-4511-a20d-5008599a6d9e",
+            "briefing_id": "56b9815b-1793-4694-b6bd-4a93ff32fbbb",
             "delivery_local_date": "2026-10-17",
             "forecast_target_date": "2026-10-18",
             "missing_inputs": [
@@ -167,10 +167,10 @@
             "trigger": "manual"
           },
           "event_mode": "replay",
-          "id": "replay:briefing:7de41ed6-a444-4511-a20d-5008599a6d9e",
+          "id": "replay:briefing:56b9815b-1793-4694-b6bd-4a93ff32fbbb",
           "occurred_at": "2026-10-17T23:20:00+00:00",
           "ref_key": {
-            "id": "7de41ed6-a444-4511-a20d-5008599a6d9e"
+            "id": "56b9815b-1793-4694-b6bd-4a93ff32fbbb"
           },
           "ref_table": "briefings",
           "site_id": 663,
@@ -196,13 +196,13 @@
           "details": {
             "category": "wildlife",
             "has_photo": true,
-            "report_id": "b5de736f-e56d-46e0-be9d-dc59d5bc8190"
+            "report_id": "01b08a6c-d428-4641-895b-32dc97265c8d"
           },
           "event_mode": "live",
-          "id": "live:report:b5de736f-e56d-46e0-be9d-dc59d5bc8190:created",
+          "id": "live:report:01b08a6c-d428-4641-895b-32dc97265c8d:created",
           "occurred_at": "2026-10-17T22:02:00+00:00",
           "ref_key": {
-            "id": "b5de736f-e56d-46e0-be9d-dc59d5bc8190"
+            "id": "01b08a6c-d428-4641-895b-32dc97265c8d"
           },
           "ref_table": "crew_reports",
           "site_id": 663,
@@ -214,13 +214,13 @@
           "details": {
             "category": "access",
             "has_photo": true,
-            "report_id": "cf9c5b30-1067-411c-b03f-65c04c16b8a7"
+            "report_id": "4ca767a7-aed5-4e1a-892b-70f37fa37448"
           },
           "event_mode": "live",
-          "id": "live:report:cf9c5b30-1067-411c-b03f-65c04c16b8a7:created",
+          "id": "live:report:4ca767a7-aed5-4e1a-892b-70f37fa37448:created",
           "occurred_at": "2026-10-17T22:03:00+00:00",
           "ref_key": {
-            "id": "cf9c5b30-1067-411c-b03f-65c04c16b8a7"
+            "id": "4ca767a7-aed5-4e1a-892b-70f37fa37448"
           },
           "ref_table": "crew_reports",
           "site_id": 663,
@@ -232,13 +232,13 @@
           "details": {
             "category": "access",
             "has_photo": true,
-            "report_id": "cf9c5b30-1067-411c-b03f-65c04c16b8a7"
+            "report_id": "4ca767a7-aed5-4e1a-892b-70f37fa37448"
           },
           "event_mode": "live",
-          "id": "live:report:cf9c5b30-1067-411c-b03f-65c04c16b8a7:resolved",
+          "id": "live:report:4ca767a7-aed5-4e1a-892b-70f37fa37448:resolved",
           "occurred_at": "2026-10-17T22:04:00+00:00",
           "ref_key": {
-            "id": "cf9c5b30-1067-411c-b03f-65c04c16b8a7"
+            "id": "4ca767a7-aed5-4e1a-892b-70f37fa37448"
           },
           "ref_table": "crew_reports",
           "site_id": 663,
@@ -248,7 +248,7 @@
         },
         {
           "details": {
-            "briefing_id": "02e5d219-187d-498c-b711-28d25c96b027",
+            "briefing_id": "04a1bad3-27a6-4bb8-b270-747b3c414cb8",
             "delivery_local_date": "2026-10-17",
             "forecast_target_date": "2026-10-18",
             "missing_inputs": [
@@ -260,10 +260,10 @@
             "trigger": "manual"
           },
           "event_mode": "live",
-          "id": "live:briefing:02e5d219-187d-498c-b711-28d25c96b027",
+          "id": "live:briefing:04a1bad3-27a6-4bb8-b270-747b3c414cb8",
           "occurred_at": "2026-10-17T22:08:00+00:00",
           "ref_key": {
-            "id": "02e5d219-187d-498c-b711-28d25c96b027"
+            "id": "04a1bad3-27a6-4bb8-b270-747b3c414cb8"
           },
           "ref_table": "briefings",
           "site_id": 663,

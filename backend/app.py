@@ -82,10 +82,11 @@ def create_app():
             'weather_fresh_sites': sum(row['weather_monitoring']['state'] == 'COMPLETE' for row in rows),
             'official_alerts_fresh_sites': sum(row['official_alerts_monitoring']['state'] == 'COMPLETE' for row in rows),
             'lightning': {'storage_ready': True, 'live_feed_connected': False},
-            'reports': {'storage_ready': True, 'upload_api_implemented': False},
-            'briefings': {'storage_ready': True, 'scheduled_delivery_implemented': False},
-            'model': {'storage_ready': True, 'saved_next_day_predictions': sum(row['prediction'] is not None for row in rows)},
-            'limitations': ['No verified river proximity or river gauge feed.',
+            'reports': {'storage_ready': True, 'upload_api_implemented': True},
+            'briefings': {'storage_ready': True, 'scheduled_delivery_implemented': True,
+                          'delivery_channel': 'in_app_supervisor_inbox', 'worker_required': True},
+            'model': {'storage_ready': True, 'saved_next_day_predictions': sum(row['model_index'] is not None for row in rows)},
+            'limitations': ['USGS stream centerline context is not floodplain or river-gauge monitoring.',
                             'Fire-weather warnings are not active-fire detections.',
                             'Official alerts are polled; there is no live strike provider yet.'],
         })
@@ -100,6 +101,10 @@ def create_app():
             return jsonify({'error': 'Site not found'}), 404
         try:
             payload = refresh_site_weather(found) if value == 'live' else fetch_weather(found)
+            if value == 'live':
+                from .predictions import refresh_predictions
+                refresh_predictions(site_ids=[site_id], records={site_id: {
+                    'payload': payload, 'error_code': 'weather_unavailable' if payload.get('stale') else None}})
             return jsonify({'site_id': site_id, 'site_mode': value, 'weather': payload})
         except DatabaseUnavailable:
             raise
@@ -111,7 +116,7 @@ def create_app():
     @app.get('/<path:path>')
     def frontend(path='index.html'):
         dist = ROOT / 'frontend' / 'dist'
-        if path.startswith('api/'):
+        if path == 'api' or path.startswith('api/'):
             return jsonify({'error': 'Endpoint not implemented'}), 404
         if not (dist / 'index.html').exists():
             return jsonify({'application': 'ready', 'frontend': 'Run npm run dev in frontend or build the frontend first.'})

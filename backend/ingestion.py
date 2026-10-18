@@ -36,6 +36,11 @@ def refresh_site_weather(site):
         payload = fetch_weather(site)
     except RuntimeError:
         db.record_weather_failure(site['id'], attempted_at)
+        # Persistent cache survives a Flask/worker restart, unlike weather._cache.
+        previous = db.latest_weather().get(site['id'], {}).get('payload')
+        if previous:
+            return {**previous, 'cached': True, 'stale': True,
+                    'warning': 'Refresh failed; showing the last persisted provider snapshot.'}
         raise
     if payload.get('stale'):
         db.record_weather_failure(site['id'], attempted_at)

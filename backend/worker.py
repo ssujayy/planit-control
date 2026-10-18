@@ -13,7 +13,6 @@ from threading import Event
 from dotenv import load_dotenv
 
 from . import db
-from .ingestion import WeatherRotation, refresh_weather
 from .official_alerts import OfficialAlertRotation, refresh_official_alerts
 
 
@@ -33,11 +32,22 @@ class Job:
 
 
 def build_jobs(*, site_ids=None, job_modules=(), once=False):
-    callback = partial(refresh_weather, site_ids=site_ids) if once else WeatherRotation(site_ids)
+    from .predictions import WeatherPredictionRotation, refresh_weather_and_predictions
+    callback = partial(refresh_weather_and_predictions, site_ids=site_ids) if once else WeatherPredictionRotation(site_ids)
     jobs = [Job('weather', callback, 15)]
     official_callback = partial(refresh_official_alerts, site_ids=site_ids) if once else OfficialAlertRotation(site_ids)
     jobs.append(Job('official_alerts', official_callback, 5))
+    from .hydrology import HydrologyRotation, refresh_context
+    hydrology_callback = partial(refresh_context, site_ids=site_ids) if once else HydrologyRotation(site_ids)
+    jobs.append(Job('hydrology', hydrology_callback, 15))
+    from .predictions import PredictionRotation, refresh_predictions
+    from .briefings import scheduled_briefings
+    prediction_callback = partial(refresh_predictions, site_ids=site_ids) if once else PredictionRotation(site_ids)
+    jobs.append(Job('predictions', prediction_callback, 15))
+    jobs.append(Job('briefings', partial(scheduled_briefings, site_ids=site_ids), 30))
     for specification in job_modules:
+        if specification in ('backend.briefings:worker_jobs', 'backend.predictions:worker_jobs'):
+            continue  # Backward-compatible explicit registration of built-in jobs.
         module_name, separator, factory_name = specification.partition(':')
         if not separator or not module_name or not factory_name:
             raise ValueError('Use --job-module package.module:factory_name.')
@@ -91,7 +101,7 @@ def run_worker(jobs, *, once=False, stop=None, clock=time.monotonic):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--once', action='store_true', help='Run each registered job once, then exit.')
-    parser.add_argument('--site-id', type=int, action='append', help='Restrict weather ingestion to these database site IDs.')
+    parser.add_argument('--site-id', type=int, action='append', help='Restrict built-in ingestion, predictions and briefings to these database site IDs.')
     parser.add_argument('--job-module', action='append', default=[], help='Explicit module:factory returning additional Job objects.')
     args = parser.parse_args(argv)
     load_dotenv(db.ROOT / '.env')

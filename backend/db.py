@@ -273,7 +273,7 @@ def get_lightning_holds(*, mode):
 def save_crew_report(*, site_id, latitude, longitude, category, note, observed_at,
                      photo, photo_content_type, mode):
     """B must verify actual image content before calling this repository."""
-    if category not in ('wildlife', 'water', 'access', 'fire', 'other'):
+    if category not in ('wildlife', 'water', 'access', 'fire', 'other', 'heat', 'lightning', 'flooding', 'mud'):
         raise ValueError('Unknown crew report category.')
     if photo_content_type not in ('image/jpeg', 'image/png', 'image/webp'):
         raise ValueError('Unsupported photo content type.')
@@ -332,31 +332,72 @@ def list_briefings(*, site_id=None, mode):
     return [{**row, 'id': str(row['id'])} for row in rows]
 
 
-def save_prediction(*, site_id, valid_date, model_version, feature_version, score, computed_at, provenance, mode):
-    if not isinstance(score, (int, float)) or isinstance(score, bool) or not math.isfinite(score) or not 0 <= score <= 10:
+def save_prediction(*, site_id, valid_date, model_version, feature_version, score, computed_at, provenance, mode,
+                    status='available', probability=None, outside_training_range=None, outside_training_counties=None):
+    if status not in ('available', 'unavailable') or (status == 'unavailable' and score is not None):
+        raise ValueError('Invalid prediction availability.')
+    if status == 'unavailable' and probability is not None:
+        raise ValueError('Unavailable predictions cannot carry a probability.')
+    if status == 'available' and (not isinstance(score, (int, float)) or isinstance(score, bool) or not math.isfinite(score) or not 0 <= score <= 10):
         raise ValueError('Experimental model score must be finite and between 0 and 10.')
+    if probability is not None and (isinstance(probability, bool) or not isinstance(probability, (int, float))
+                                    or not math.isfinite(probability) or not 0 <= probability <= 1):
+        raise ValueError('Invalid prediction probability.')
+    if outside_training_range is not None and (not isinstance(outside_training_range, list)
+                                             or not all(isinstance(value, str) for value in outside_training_range)):
+        raise ValueError('Range warnings must be a list of feature names.')
     if not isinstance(provenance, dict) or not provenance.get('model_artifact'):
         raise ValueError('Prediction provenance must identify the actual saved model artifact.')
     with connection() as conn:
         conn.execute('''INSERT INTO model_predictions
-            (site_id, event_mode, valid_date, model_version, feature_version, score, computed_at, provenance)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            (site_id, event_mode, valid_date, model_version, feature_version, score, computed_at, provenance,
+             status, probability, outside_training_range, outside_training_counties)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (site_id, event_mode, valid_date, model_version, feature_version) DO UPDATE
-            SET score = EXCLUDED.score, computed_at = EXCLUDED.computed_at, provenance = EXCLUDED.provenance
+            SET score = EXCLUDED.score, computed_at = EXCLUDED.computed_at, provenance = EXCLUDED.provenance,
+                status = EXCLUDED.status, probability = EXCLUDED.probability,
+                outside_training_range = EXCLUDED.outside_training_range,
+                outside_training_counties = EXCLUDED.outside_training_counties
             WHERE model_predictions.computed_at <= EXCLUDED.computed_at''',
             (site_id, event_mode(mode), valid_date, text(model_version, 200), text(feature_version, 200),
-             score, timestamp(computed_at), Jsonb(provenance)))
+             score, timestamp(computed_at), Jsonb(provenance), status, probability,
+             Jsonb(outside_training_range or []), outside_training_counties))
 
 
 def next_day_predictions(*, now, mode):
+    return daily_predictions(now=now, mode=mode, day_offset=1)
+
+
+def daily_predictions(*, now, mode, day_offset=0):
+    if day_offset not in (0, 1):
+        raise ValueError('Only today and tomorrow predictions are supported.')
     with connection() as conn:
         rows = conn.execute('''SELECT DISTINCT ON (p.site_id) p.site_id, p.valid_date,
-                p.model_version, p.feature_version, p.score, p.computed_at, p.provenance
+                p.model_version, p.feature_version, p.score, p.computed_at, p.provenance,
+                p.status, p.probability, p.outside_training_range, p.outside_training_counties
             FROM model_predictions p JOIN sites s ON s.id = p.site_id
-            WHERE p.event_mode = %s AND p.valid_date = (%s::timestamptz AT TIME ZONE s.timezone)::date + 1
+            WHERE p.event_mode = %s AND p.valid_date = (%s::timestamptz AT TIME ZONE s.timezone)::date + %s
             ORDER BY p.site_id, p.computed_at DESC, p.model_version, p.feature_version''',
-            (event_mode(mode), timestamp(now))).fetchall()
+            (event_mode(mode), timestamp(now), day_offset)).fetchall()
     return {row['site_id']: row for row in rows}
+
+
+def latest_hydrology():
+    with connection() as conn:
+        rows = conn.execute('SELECT site_id, fetched_at, attempted_at, error_code, payload FROM site_hydrology').fetchall()
+    return {row['site_id']: row for row in rows}
+
+
+def save_hydrology(site_id, now, payload):
+    with connection() as conn:
+        conn.execute('''INSERT INTO site_hydrology (site_id, fetched_at, attempted_at, error_code, payload)
+            VALUES (%s, %s, %s, %s, %s) ON CONFLICT (site_id) DO UPDATE SET
+                attempted_at = EXCLUDED.attempted_at, error_code = EXCLUDED.error_code,
+                fetched_at = COALESCE(EXCLUDED.fetched_at, site_hydrology.fetched_at),
+                payload = COALESCE(EXCLUDED.payload, site_hydrology.payload)
+            WHERE site_hydrology.attempted_at <= EXCLUDED.attempted_at''',
+            (site_id, now if payload is not None else None, now,
+             'hydrology_unavailable' if payload is None else None, Jsonb(payload) if payload is not None else None))
 
 
 

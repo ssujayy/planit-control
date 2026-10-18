@@ -8,6 +8,7 @@ from backend.ops_store import MemoryStore
 from backend.timeline import site_timeline
 from ops_fixtures import FIXTURES, build_responses
 from ops_support import SITES, Clock, at, make_client, site, strike_payload
+from image_support import JPEG
 
 DEERHAVEN = site(663)
 EVENT_TYPES = {'lightning_hold_started', 'lightning_hold_extended', 'lightning_hold_expired',
@@ -44,7 +45,7 @@ def test_live_never_shows_replay_and_replay_shows_live_reports(monkeypatch):
     client.post('/api/replay/sessions', json={'speed': 10})
     client.post('/api/reports', content_type='multipart/form-data',
                 data={'site_id': '663', 'latitude': '29.76', 'longitude': '-82.39', 'category': 'other', 'note': 'Hot',
-                      'photo': (io.BytesIO(b'\xff\xd8\xff\xe0' + b'\x00' * 16), 'p.jpg')})
+                      'photo': (io.BytesIO(JPEG), 'p.jpg')})
     clock.set('2026-10-17T22:02:00+00:00')
     replay = client.get('/api/sites/663/timeline?event_mode=replay').json
     live = client.get('/api/sites/663/timeline').json

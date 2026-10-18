@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { activeAlerts, activeHold, attentionReasons, briefingWindow, countdown, coverageState, feedState, hazardState, predictionFor, rankRows } from '../src/outlook.js';
+import { activeAlerts, activeHold, attentionReasons, briefingWindow, countdown, coverageState, feedState, hazardState, predictionFor, predictionReason, rankRows } from '../src/outlook.js';
 import { floodAlert, siteRow } from './fixtures.mjs';
 
 const now = Date.parse('2026-10-17T21:59:50Z');
@@ -61,7 +61,7 @@ test('elapsed holds drop below active warnings without stale hold reasons', () =
 test('zero is a real saved score; null, invalid, or bare model_index is unavailable', () => {
   const row = siteRow(1, now, { model_index: 9 });
   assert.equal(predictionFor(row, now), null);
-  row.prediction = { valid_date: '2026-10-18', score: 0 };
+  row.prediction = { valid_date: '2026-10-18', score: 0, computed_at: new Date(now).toISOString() };
   assert.equal(predictionFor(row, now).score, 0);
   for (const score of [null, NaN, Infinity, -1, 11]) {
     row.prediction.score = score;
@@ -71,10 +71,34 @@ test('zero is a real saved score; null, invalid, or bare model_index is unavaila
 
 test('prediction target follows each site local date and expires at local midnight', () => {
   const at = Date.parse('2026-10-18T04:30:00Z');
-  const eastern = siteRow(1, at, { prediction: { valid_date: '2026-10-18', score: 2 } });
+  const eastern = siteRow(1, at, { prediction: { valid_date: '2026-10-18', score: 2, computed_at: new Date(at).toISOString() } });
   assert.equal(predictionFor(eastern, at), null);
   const central = { ...eastern, site: { ...eastern.site, timezone: 'America/Chicago' } };
   assert.equal(predictionFor(central, at).score, 2);
+});
+
+test('stale, unavailable and undated model outputs cannot masquerade as current scores', () => {
+  const row = siteRow(1, now);
+  const prediction = { valid_date: '2026-10-18', score: 0, computed_at: new Date(now).toISOString() };
+  for (const override of [{ stale: true }, { status: 'unavailable' }, { computed_at: null }, { computed_at: new Date(now - 1800001).toISOString() }]) {
+    row.prediction = { ...prediction, ...override };
+    assert.equal(predictionFor(row, now), null);
+  }
+  row.current_prediction = { ...prediction, valid_date: '2026-10-17' };
+  assert.equal(predictionFor(row, now, 0).score, 0);
+});
+
+test('today and tomorrow indices stay separate and unavailable scores explain the cause', () => {
+  const row = siteRow(1, now, {
+    current_prediction: { valid_date: '2026-10-17', score: 4.25, computed_at: new Date(now).toISOString() },
+    prediction: { valid_date: '2026-10-18', score: 1.75, computed_at: new Date(now).toISOString() },
+  });
+  assert.equal(predictionFor(row, now, 0).score, 4.25);
+  assert.equal(predictionFor(row, now).score, 1.75);
+  row.current_prediction = null;
+  row.current_prediction_monitoring = { state: 'UNAVAILABLE', reason: 'Missing full daily forecast inputs.' };
+  assert.match(predictionReason(row, now, 0), /Missing full daily/);
+  assert.equal(predictionReason(row, now), '');
 });
 
 test('6 PM delivery dates respect site timezone and distinguish forecast date', () => {

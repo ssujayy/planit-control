@@ -5,6 +5,7 @@ import math
 from . import db
 from .official_alerts import FRESHNESS_SECONDS as OFFICIAL_FRESHNESS_SECONDS
 from .planning_weather import summarize
+from .hydrology import context_view, overnight_advisory
 
 WEATHER_FRESHNESS_SECONDS = 1800
 UNIMPLEMENTED_LAYERS = ['lightning', 'flood', 'wildfire', 'wildlife', 'model']
@@ -77,6 +78,7 @@ def missing_fields(payload):
 
 
 def build_outlook(mode, *, now=None):
+    fixed_clock = now is not None
     now = now or datetime.now(timezone.utc)
     sites = db.list_sites(mode)
     stored = db.latest_weather() if mode == 'live' else {}
@@ -84,6 +86,12 @@ def build_outlook(mode, *, now=None):
     holds = db.get_lightning_holds(mode='live') if mode == 'live' else {}
     reports = db.list_crew_reports(mode='live', unresolved_only=True) if mode == 'live' else []
     predictions = db.next_day_predictions(now=now, mode='live') if mode == 'live' else {}
+    current_predictions = db.daily_predictions(now=now, mode='live') if mode == 'live' else {}
+    hydrology = db.latest_hydrology() if mode == 'live' else {}
+    if not fixed_clock:
+        # A worker may write fresh weather/predictions while these queries run.
+        # Evaluate freshness after reading, so a concurrent write is not "future".
+        now = datetime.now(timezone.utc)
     by_site = {}
     for report in reports:
         by_site.setdefault(report['site_id'], []).append(report)
@@ -143,15 +151,46 @@ def build_outlook(mode, *, now=None):
             hold = {**hold, 'seconds_remaining': max(0, int((hold['hold_until'] - now).total_seconds()))}
             reasons.insert(0, 'Active lightning hold until ' + hold['hold_until'].isoformat() + '.')
         site_reports = by_site.get(site['id'], [])
+        if mode == 'live':
+            unavailable.remove('wildlife')
+        report_monitoring = {'state': 'PARTIAL' if mode == 'live' else 'UNAVAILABLE',
+                             'evidence_type': 'crew_report', 'note': 'Crew sightings only; no reports does not mean no hazard.'}
         prediction = predictions.get(site['id'])
-        if prediction:
-            prediction = {**prediction, 'evidence_type': 'experimental_prediction', 'label': 'experimental model index'}
+        current_prediction = current_predictions.get(site['id'])
+        def present_prediction(value):
+            if value is None:
+                return None
+            try:
+                age = (now - db.timestamp(value['computed_at'])).total_seconds()
+            except (KeyError, ValueError, TypeError):
+                age = -1
+            stale = (not 0 <= age <= WEATHER_FRESHNESS_SECONDS or monitoring['state'] == 'STALE')
+            reason = ('Weather or model output is stale; refresh this site’s forecast.' if stale else
+                      (value.get('provenance') or {}).get('reason'))
+            return {**value, 'score': value['score'] if not stale and value.get('status', 'available') == 'available' else None,
+                    'reason': reason, 'stale': stale, 'evidence_type': 'experimental_prediction', 'label': 'experimental model index'}
+        prediction, current_prediction = present_prediction(prediction), present_prediction(current_prediction)
+        if prediction and prediction['score'] is not None:
             unavailable.remove('model')
+        def prediction_coverage(value):
+            return {'state': 'UNAVAILABLE' if not value or value.get('status') == 'unavailable'
+                    else 'STALE' if value['stale'] else 'COMPLETE',
+                    'reason': value.get('reason') if value else (
+                        'No stored weather snapshot. Start the worker to collect forecasts and compute model indices.' if not weather else
+                        'No saved model prediction for this local date. Run the worker or refresh this site’s weather.')}
+        prediction_monitoring = prediction_coverage(prediction)
+        current_prediction_monitoring = prediction_coverage(current_prediction)
         if active_alerts:
             reasons.insert(0, 'Official alerts: ' + ', '.join(alert['event'] for alert in active_alerts) + '.')
         if site_reports:
             reasons.insert(0, f'{len(site_reports)} unresolved crew report(s).')
         planning = summarize(weather, site, now)
+        river = context_view(hydrology.get(site['id'], {}), now)
+        flood_advisory = overnight_advisory(site, weather, river, now)
+        if flood_advisory['active'] is None:
+            unavailable.append('river_rainfall_advisory')
+        if flood_advisory['active']:
+            reasons.insert(0, 'Illustrative flood advisory: ' + flood_advisory['reason'])
         missing_summary = [name for name in ('heat_index_max_f', 'precipitation_sum_mm', 'soil_moisture_max_m3_m3')
                            if planning[name] is None]
         if weather and missing_summary:
@@ -163,16 +202,20 @@ def build_outlook(mode, *, now=None):
         reasons.append('Incomplete monitoring: ' + ', '.join(unavailable) + '.')
         if mode == 'demo':
             reasons.append('Hazard integrations and ranking are not implemented in demo storage.')
-        hazard_state = ('STOP_WORK' if hold else 'ALERT' if active_alerts else 'ELEVATED' if site_reports
+        hazard_state = ('STOP_WORK' if hold else 'ALERT' if active_alerts else 'ELEVATED' if site_reports or flood_advisory['active']
                         else 'NO_ACTIVE_ALERTS' if official_monitoring['state'] == 'COMPLETE' else None)
         rows.append({
             'site': site, 'weather': weather, 'weather_monitoring': monitoring,
             'coverage': coverage, 'hazard_state': hazard_state, 'alerts': active_alerts,
             'model_index': prediction['score'] if prediction else None,
             'prediction': prediction, 'planning_weather': planning,
+            'current_prediction': current_prediction,
+            'current_model_index': current_prediction['score'] if current_prediction else None,
+            'prediction_monitoring': prediction_monitoring, 'crew_reports_monitoring': report_monitoring,
+            'current_prediction_monitoring': current_prediction_monitoring,
             'official_alerts_monitoring': official_monitoring, 'lightning_hold': hold,
             'unresolved_reports': site_reports,
-            'river_proximity': {'status': 'unknown', 'source': None},
+            'river_proximity': river, 'flood_advisory': flood_advisory,
             'unavailable_layers': unavailable, 'reasons': reasons,
         })
     if mode == 'live':
@@ -182,11 +225,11 @@ def build_outlook(mode, *, now=None):
                          and ('warning' in alert['event'].lower() or alert.get('urgency') == 'Immediate')
                          for alert in alerts)
             level = (0 if row['lightning_hold'] else 1 if severe else 2 if alerts else
-                     3 if row['unresolved_reports'] else 4 if 'lightning' in row['unavailable_layers'] else 5)
+                     3 if row['unresolved_reports'] or row['flood_advisory']['active'] else 4 if 'lightning' in row['unavailable_layers'] else 5)
             heat = row['planning_weather']['heat_index_max_f']
             score = row['model_index']
-            return (level, -heat if heat is not None else float('inf'),
-                    -score if score is not None else float('inf'), row['site']['state'], row['site']['name'])
+            return (level, -score if score is not None else float('inf'),
+                    -heat if heat is not None else float('inf'), row['site']['state'], row['site']['name'])
         rows.sort(key=priority)
     for index, row in enumerate(rows, 1):
         row['rank'] = index if mode == 'live' else None

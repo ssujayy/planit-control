@@ -46,12 +46,12 @@ def test_failed_weather_is_unavailable_not_safe(client, monkeypatch):
 
 
 def test_cached_weather_is_marked_stale_after_refresh_failure(monkeypatch):
-    key = (29.0, -82.0)
+    key = (29.0, -82.0, 'America/New_York')
     weather._cache[key] = {'cached_at': -1000000, 'payload': {'source': 'Open-Meteo', 'current': {'temperature_2m': 22}}}
     def fail(*a, **kw):
         raise OSError('offline')
     monkeypatch.setattr(weather.urllib.request, 'urlopen', fail)
-    result = weather.fetch_weather({'latitude': key[0], 'longitude': key[1]})
+    result = weather.fetch_weather({'latitude': key[0], 'longitude': key[1], 'timezone': key[2]})
     assert result['stale'] is True
     assert result['current']['temperature_2m'] == 22
     weather._cache.pop(key)

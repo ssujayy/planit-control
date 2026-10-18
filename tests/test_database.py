@@ -36,7 +36,7 @@ def weather_payload():
 
 
 def test_migrations_and_seed_are_repeatable(isolated_database):
-    assert db.migrate() == ['001_weather_worker.sql', '002_workflow_storage.sql']
+    assert db.migrate() == ['001_weather_worker.sql', '002_workflow_storage.sql', '003_operational_events.sql', '004_compliance.sql', '005_hydrology_context.sql']
     assert db.migrate() == []
     assert db.seed_sites() == 55
     assert db.seed_sites() == 55
@@ -189,3 +189,41 @@ def test_official_refresh_failure_retains_last_alert_snapshot(isolated_database)
     record = db.latest_official_alerts()[663]
     assert record['payload'] == payload
     assert record['error_code'] == 'official_alerts_unavailable'
+
+
+def test_unavailable_predictions_and_hydrology_survive_new_repository_reads(isolated_database):
+    db.migrate()
+    db.seed_sites()
+    now = datetime.now(timezone.utc)
+    db.save_prediction(site_id=663, valid_date=now.date(), model_version='unavailable',
+                       feature_version='daily-weather-v1', score=None, computed_at=now,
+                       provenance={'model_artifact': 'ml/artifacts/model.joblib', 'reason': 'Missing forecast'},
+                       mode='live', status='unavailable')
+    row = isolated_database.execute('SELECT status, score, probability FROM model_predictions').fetchone()
+    assert row == {'status': 'unavailable', 'score': None, 'probability': None}
+    context = {'source': 'TEST FIXTURE', 'near_stream': True}
+    db.save_hydrology(663, now, context)
+    db.save_hydrology(663, now+timedelta(seconds=1), None)
+    retained = db.latest_hydrology()[663]
+    assert retained['payload'] == context
+    assert retained['error_code'] == 'hydrology_unavailable'
+
+
+def test_photo_report_is_shared_across_app_instances_and_survives_resolution(isolated_database, monkeypatch):
+    import io
+    from backend.app import create_app
+    from image_support import PNG
+    db.migrate()
+    db.seed_sites()
+    monkeypatch.setattr('backend.app.load_dotenv', lambda *_: None)
+    first = create_app().test_client()
+    created = first.post('/api/reports', data={'site_id': '663', 'latitude': '29.76', 'longitude': '-82.39',
+                          'category': 'mud', 'note': 'TEST FIXTURE wet road', 'photo': (io.BytesIO(PNG), 'road.png')})
+    assert created.status_code == 201
+    report = created.json['report']
+    second = create_app().test_client()
+    assert second.get(report['photo_url']).data == PNG
+    assert second.post(f"/api/reports/{report['id']}/resolve").json['report']['status'] == 'resolved'
+    restarted = create_app().test_client()
+    history = restarted.get('/api/reports?site_id=663&status=resolved&category=mud').json
+    assert [row['id'] for row in history['history']] == [report['id']]

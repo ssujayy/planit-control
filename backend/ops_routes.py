@@ -12,7 +12,7 @@ from flask import jsonify as flask_jsonify
 from werkzeug.exceptions import RequestEntityTooLarge
 
 from . import replay
-from .briefings import deliver_briefing, due_date, site_local, store_inputs_provider
+from .briefings import deliver_briefing, due_date, generate_briefing, site_local, store_inputs_provider
 from .lightning import HOLD_MINUTES, RADIUS_MILES, STATUS_NOTE, LiveSource, coverage, hold_view, lightning_status, parse_strike, process_strike
 from .ops_common import REPLAY_LABEL, ValidationError, iso, mode_label, parse_event_mode, utc_now
 from .db import DatabaseUnavailable
@@ -199,7 +199,7 @@ def list_reports(store):
     site = store.get_site(_site_id(request.args.get('site_id')))
     if not site:
         return _not_found('Site')
-    return jsonify(site_history(store, site, _now()))
+    return jsonify(site_history(store, site, _now(), request.args))
 
 
 @ops_bp.get('/api/reports/<report_id>/photo')
@@ -223,6 +223,19 @@ def resolve(store, report_id):
 
 
 # Briefings
+
+@ops_bp.post('/api/briefings/preview')
+@with_store
+def preview_briefing(store):
+    body = request.get_json(silent=True) or {}
+    site = store.get_site(_site_id(body.get('site_id')))
+    if not site:
+        return _not_found('Site')
+    now = _now()
+    delivery = site_local(site, now).date()
+    inputs = store_inputs_provider(store, _live_source(), outlook=_outlook())(site, delivery, 'live', now)
+    briefing = generate_briefing(site, delivery, inputs, 'live', now, trigger='preview')
+    return jsonify({'preview': True, 'delivered': False, 'briefing': briefing})
 
 @ops_bp.get('/api/briefings')
 @with_store

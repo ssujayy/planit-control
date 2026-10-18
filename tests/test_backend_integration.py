@@ -19,6 +19,8 @@ def empty_workflow_storage(monkeypatch):
     monkeypatch.setattr(db, 'get_lightning_holds', lambda **kwargs: {})
     monkeypatch.setattr(db, 'list_crew_reports', lambda **kwargs: [])
     monkeypatch.setattr(db, 'next_day_predictions', lambda **kwargs: {})
+    monkeypatch.setattr(db, 'daily_predictions', lambda **kwargs: {})
+    monkeypatch.setattr(db, 'latest_hydrology', lambda: {})
 
 
 @pytest.fixture
@@ -192,10 +194,14 @@ def test_live_manual_weather_keeps_response_contract_and_persists(client, site, 
         called.append(selected['id'])
         return payload
     monkeypatch.setattr('backend.app.refresh_site_weather', refresh)
+    model_calls = []
+    monkeypatch.setattr('backend.predictions.refresh_predictions', lambda **kwargs: model_calls.append(kwargs))
     result = client.get(f"/api/sites/{site['id']}/weather?mode=live")
     assert result.status_code == 200
     assert result.json == {'site_id': site['id'], 'site_mode': 'live', 'weather': payload}
     assert called == [site['id']]
+    assert model_calls[0]['site_ids'] == [site['id']]
+    assert model_calls[0]['records'][site['id']]['payload'] == payload
 
 
 def test_manual_weather_database_failure_is_503_not_weather_failure(client, site, monkeypatch):

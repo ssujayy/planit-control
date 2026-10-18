@@ -25,6 +25,8 @@ def configure(monkeypatch, *, official=None, holds=None, reports=None, predictio
     monkeypatch.setattr(db, 'get_lightning_holds', lambda **kwargs: holds or {})
     monkeypatch.setattr(db, 'list_crew_reports', lambda **kwargs: reports or [])
     monkeypatch.setattr(db, 'next_day_predictions', lambda **kwargs: predictions or {})
+    monkeypatch.setattr(db, 'daily_predictions', lambda **kwargs: {})
+    monkeypatch.setattr(db, 'latest_hydrology', lambda: {})
     return sites
 
 
@@ -59,7 +61,7 @@ def test_active_hold_ranks_above_high_model_score(monkeypatch):
     configure(monkeypatch, holds={first['id']: {
         'hold_until': NOW+timedelta(minutes=20), 'last_strike_at': NOW-timedelta(minutes=10), 'source': 'fixture'}},
         predictions={second['id']: {'score': 10, 'valid_date': NOW.date()+timedelta(days=1),
-                                  'model_version': 'fixture-only', 'feature_version': 'fixture'}})
+                                  'model_version': 'fixture-only', 'feature_version': 'fixture', 'computed_at': NOW}})
     rows = outlook.build_outlook('live', now=NOW)['sites']
     assert rows[0]['site']['id'] == first['id']
     assert rows[0]['hazard_state'] == 'STOP_WORK'
@@ -113,7 +115,7 @@ def forecast(times):
 def test_local_day_summary_requires_all_hours_and_correct_units():
     site = db.demo_sites()[0]
     start = datetime(2026, 10, 18, 4, tzinfo=timezone.utc)
-    times = [int((start+timedelta(hours=hour)).timestamp()) for hour in range(24)]
+    times = [int((start+timedelta(hours=hour)).timestamp()) for hour in range(25)]
     data = forecast(times)
     result = summarize(data, site, NOW)
     assert result['heat_index_max_f'] == pytest.approx(105.9, abs=.1)
@@ -121,7 +123,7 @@ def test_local_day_summary_requires_all_hours_and_correct_units():
     assert result['soil_moisture_max_m3_m3'] == .4
     data['hourly_units']['precipitation'] = 'inch'
     assert summarize(data, site, NOW)['precipitation_sum_mm'] is None
-    assert summarize(forecast(times[:-1]), site, NOW)['heat_index_max_f'] is None
+    assert summarize(forecast(times[1:]), site, NOW)['heat_index_max_f'] is None
     assert summarize({'hourly': ['invalid'], 'hourly_units': None}, site, NOW)['heat_index_max_f'] is None
 
 
@@ -131,7 +133,7 @@ def test_local_day_summary_requires_all_hours_and_correct_units():
 ])
 def test_daylight_saving_day_is_not_forced_into_24_hours(now, start, hours):
     site = db.demo_sites()[0]
-    times = [int((start+timedelta(hours=hour)).timestamp()) for hour in range(hours)]
+    times = [int((start+timedelta(hours=hour)).timestamp()) for hour in range(hours+1)]
     assert summarize(forecast(times), site, now)['precipitation_sum_mm'] == hours
 
 

@@ -7,6 +7,7 @@ import urllib.request
 
 from . import db
 from .ingestion import selected_sites
+from .providers import open_provider
 
 FRESHNESS_SECONDS = 600
 
@@ -19,7 +20,7 @@ def fetch_official_alerts(site):
         'Accept': 'application/geo+json',
     })
     try:
-        with urllib.request.urlopen(request, timeout=12) as response:
+        with open_provider(request, timeout=12) as response:
             raw = json.load(response)
         if raw.get('type') != 'FeatureCollection' or not isinstance(raw.get('features'), list):
             raise ValueError('Invalid official alert collection.')

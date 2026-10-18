@@ -1,8 +1,13 @@
 """Crew hazard reports with a required photo, stored in A's crew_reports table (shared database)."""
-from .lightning import haversine_km
-from .ops_common import ValidationError, iso, parse_coordinate
+import io
+import warnings
 
-CATEGORIES = ('wildlife', 'water', 'access', 'fire', 'other')  # A's crew_reports CHECK (migration 002)
+from PIL import Image, UnidentifiedImageError
+
+from .lightning import haversine_km
+from .ops_common import ValidationError, iso, parse_coordinate, parse_iso
+
+CATEGORIES = ('wildlife', 'heat', 'lightning', 'flooding', 'mud', 'fire', 'other', 'water', 'access')
 NOTE_LIMIT = 2000
 PHOTO_LIMIT = 5 * 1024 * 1024  # 5 MiB
 FAR_FROM_SITE_KM = 5.0
@@ -14,18 +19,24 @@ class PhotoTooLarge(ValidationError):
 
 
 def sniff_image(data):
-    """Return the content type from the file signature; reject everything that is not JPEG, PNG or WebP."""
+    """Verify structure and decode pixels; signatures alone accept corrupt uploads."""
     if not data:
         raise ValidationError('photo is required and must not be empty')
     if len(data) > PHOTO_LIMIT:
         raise PhotoTooLarge('photo must be 5 MiB or smaller')
-    if data.startswith(b'\xff\xd8\xff') and len(data) > 3:
-        return 'image/jpeg'
-    if data.startswith(b'\x89PNG\r\n\x1a\n') and len(data) > 8:
-        return 'image/png'
-    if data[:4] == b'RIFF' and data[8:12] == b'WEBP' and len(data) > 12:
-        return 'image/webp'
-    raise ValidationError('photo must be a JPEG, PNG or WebP image')
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter('error', Image.DecompressionBombWarning)
+            with Image.open(io.BytesIO(data)) as image:
+                kind = image.format
+                if kind not in ('JPEG', 'PNG', 'WEBP') or image.width * image.height > 25_000_000:
+                    raise ValueError('unsupported image or too many pixels')
+                image.verify()
+            with Image.open(io.BytesIO(data)) as image:
+                image.load()
+        return {'JPEG': 'image/jpeg', 'PNG': 'image/png', 'WEBP': 'image/webp'}[kind]
+    except (UnidentifiedImageError, OSError, ValueError, SyntaxError, Image.DecompressionBombError, Image.DecompressionBombWarning):
+        raise ValidationError('photo must be a complete JPEG, PNG or WebP image (at most 25 million pixels)') from None
 
 
 def build_report(site, form, photo_bytes, now):
@@ -63,8 +74,20 @@ def create_report(store, site, form, photo_bytes, now):
     return report_view(store.get_report(report_id), site)
 
 
-def site_history(store, site, now):
+def site_history(store, site, now, filters=None):
     rows = [report_view(r, site) for r in store.list_reports(site['id'], 'live')]
+    filters = filters or {}
+    category, status = filters.get('category'), filters.get('status')
+    if category and category not in CATEGORIES:
+        raise ValidationError('Unknown report category')
+    if status and status not in ('unresolved', 'resolved'):
+        raise ValidationError('status must be unresolved or resolved')
+    since = parse_iso(filters['since'], 'since') if filters.get('since') else None
+    query = filters.get('q', '').strip().casefold()
+    rows = [r for r in rows if (not category or r['category'] == category)
+            and (not status or r['status'] == status)
+            and (not query or query in r['note'].casefold())
+            and (not since or parse_iso(r['observed_at'], 'observed_at') >= since)]
     unresolved = [r for r in rows if r['status'] == 'unresolved']
     return {'site_id': site['id'], 'event_mode': 'live', 'current_unresolved': unresolved, 'history': rows,
             'counts': {'unresolved': len(unresolved), 'total': len(rows)}, 'as_of': iso(now), 'note': HISTORY_NOTE}

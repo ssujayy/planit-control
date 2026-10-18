@@ -66,7 +66,7 @@ export function feedState(row, feed, now, disconnected = false) {
 export function hazardState(row, now, disconnected = false) {
   if (activeHold(row, now)) return 'STOP_WORK';
   if (activeAlerts(row, now).length) return 'ALERT';
-  if (row.unresolved_reports?.length) return 'ELEVATED';
+  if (row.unresolved_reports?.length || row.flood_advisory?.active === true) return 'ELEVATED';
   return feedState(row, 'official', now, disconnected) === 'COMPLETE' ? 'NO_ACTIVE_ALERTS' : 'UNKNOWN';
 }
 
@@ -76,7 +76,7 @@ export function coverageState(row, now, disconnected = false) {
 }
 
 export const HAZARD_LABELS = {
-  STOP_WORK: 'Stop work', ALERT: 'Official alert', ELEVATED: 'Crew report',
+  STOP_WORK: 'Stop work', ALERT: 'Official alert', ELEVATED: 'Crew report / advisory',
   NO_ACTIVE_ALERTS: 'No active alerts', UNKNOWN: 'Status unknown',
 };
 
@@ -85,10 +85,23 @@ export function countdown(hold, now) {
   return `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
 }
 
-export function predictionFor(row, now) {
-  const prediction = row.prediction;
+export function predictionFor(row, now, dayOffset = 1) {
+  const prediction = dayOffset === 0 ? row.current_prediction : row.prediction;
   if (!prediction || !Number.isFinite(prediction.score) || prediction.score < 0 || prediction.score > 10) return null;
-  return prediction.valid_date === addDays(localDate(now, row.site.timezone), 1) ? prediction : null;
+  if (prediction.stale || prediction.status === 'unavailable') return null;
+  const age = now - Date.parse(prediction.computed_at);
+  if (!Number.isFinite(age) || age < -1000 || age > 1800000) return null;
+  return prediction.valid_date === addDays(localDate(now, row.site.timezone), dayOffset) ? prediction : null;
+}
+
+export function predictionReason(row, now, dayOffset = 1) {
+  if (predictionFor(row, now, dayOffset)) return '';
+  const prediction = dayOffset === 0 ? row.current_prediction : row.prediction;
+  if (prediction?.reason) return prediction.reason;
+  if (prediction && prediction.valid_date !== addDays(localDate(now, row.site.timezone), dayOffset)) return 'No prediction saved for this local date.';
+  if (prediction?.stale || prediction && now - Date.parse(prediction.computed_at) > 1800000) return 'Stored model output is stale; refresh the site forecast.';
+  const monitoring = dayOffset === 0 ? row.current_prediction_monitoring : row.prediction_monitoring;
+  return monitoring?.reason || prediction?.provenance?.reason || 'No saved model output. The background worker must collect a full daily forecast and calculate this index.';
 }
 
 export function rankRows(rows, now) {
@@ -98,7 +111,7 @@ export function rankRows(rows, now) {
     if (alerts.some(alert => ['Extreme', 'Severe'].includes(alert.severity)
       && (/warning/i.test(alert.event) || alert.urgency === 'Immediate'))) return 1;
     if (alerts.length) return 2;
-    if (row.unresolved_reports?.length) return 3;
+    if (row.unresolved_reports?.length || row.flood_advisory?.active === true) return 3;
     return row.unavailable_layers?.includes('lightning') ? 4 : 5;
   };
   // Preserve the server's order within each priority; only elapsed holds/alerts change groups locally.

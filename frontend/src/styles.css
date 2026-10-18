@@ -494,3 +494,19 @@ footer {
   .panel-title { flex-wrap: wrap; }
   .sync-line { line-height: 1.7; }
 }
+/* Shared crew workflow: forms and geographic report history. */
+.report-map { height: 290px; border: 1px solid #ccd6cd; border-radius: 8px; margin: 16px 0; }
+.metric-note { font-size: .75rem; line-height: 1.5; font-weight: 400; color: #596a72; overflow-wrap: anywhere; }
+.today-index strong { font-size: 1.4rem; }
+.report-location-pin { background: #9b4d12; color: white; border: 2px solid white; border-radius: 50%; text-align: center; font-size: 24px; line-height: 25px; }
+.report-form { display: grid; gap: 14px; }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+.report-form label, .history-filters label { display: grid; gap: 6px; font-size: .9rem; }
+.report-form input, .report-form textarea, .report-form select, .history-filters input, .history-filters select { width: 100%; box-sizing: border-box; padding: 10px; background: #fff; border: 1px solid #aab9ac; border-radius: 5px; font: inherit; }
+.history-filters { margin: 25px 0 15px; }
+.history-report { display: flex; justify-content: space-between; gap: 20px; padding: 16px 0; border-top: 1px solid #dae2da; }
+.history-report img { width: 95px; height: 95px; object-fit: cover; border-radius: 5px; }
+.history-report > div { min-width: 0; overflow-wrap: anywhere; }
+.briefing-record { margin-top: 18px; border-top: 1px solid #dae2da; padding-top: 12px; }
+.briefing-record summary { cursor: pointer; line-height: 1.5; }
+button:disabled { opacity: .55; cursor: wait; }

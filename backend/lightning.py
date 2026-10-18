@@ -11,7 +11,7 @@ from typing import Protocol
 from .ops_common import EVENT_MODES, ValidationError, iso, mode_label, parse_coordinate, parse_iso
 
 RADIUS_MILES = 10
-RADIUS_KM = 16.0934
+RADIUS_KM = 16.09344  # Exactly 10 international miles, inclusive.
 HOLD_MINUTES = 30
 HOLD = timedelta(minutes=HOLD_MINUTES)
 STALE_AFTER = timedelta(minutes=10)
@@ -91,7 +91,7 @@ def process_strike(store, strike, sites, now):
     affected = []
     for site in sites:
         distance = haversine_km(strike['latitude'], strike['longitude'], site['latitude'], site['longitude'])
-        if distance <= RADIUS_KM:
+        if distance <= RADIUS_KM + 1e-8:  # Floating-point tolerance under 0.01 mm.
             affected.append((site, distance))
     before = {h['site_id']: h['hold_until'] for h in store.list_holds(strike['event_mode'])} if affected else {}
     if not store.store_strike(strike, [site['id'] for site, _ in affected]):
@@ -166,8 +166,8 @@ def coverage(store, event_mode, now, live_source=None, replay_session=None):
         return dict(base, status='UNAVAILABLE', note='No live lightning feed is connected. The absence of a hold is not evidence of no strikes.')
     if checked is None:
         return dict(base, status='UNAVAILABLE', note='The live lightning feed has not been checked yet.')
-    if now - checked > STALE_AFTER:
-        return dict(base, status='STALE', note=f'The live lightning feed was last checked more than {int(STALE_AFTER.total_seconds() // 60)} minutes ago.')
+    if not timedelta(0) <= now - checked <= STALE_AFTER:
+        return dict(base, status='STALE', note='The live lightning feed check is stale or its timestamp is in the future.')
     note = None if received else 'Feed connected and checked; no strikes have been received.'
     return dict(base, status='COMPLETE', note=note)
 
