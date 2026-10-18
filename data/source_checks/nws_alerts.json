@@ -1,0 +1,22 @@
+{
+  "url": "https://api.weather.gov/alerts/active?point=29.7592,-82.3878",
+  "retrieved_at": "2026-10-17T22:37:32.696964+00:00",
+  "root_fields": [
+    "@context",
+    "features",
+    "title",
+    "type",
+    "updated"
+  ],
+  "feature_count": 0,
+  "sample_property_fields": [],
+  "response": {
+    "@context": {
+      "@version": "1.1"
+    },
+    "type": "FeatureCollection",
+    "features": [],
+    "title": "Current watches, warnings, and advisories for 29.7592 N, 82.3878 W",
+    "updated": "2026-10-17T22:35:53+00:00"
+  }
+}

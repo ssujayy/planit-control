@@ -1,5 +1,14 @@
 # Setup status
 
+This is the original scaffold-era record. The current verified backend status
+is in [A's coordination log](coordination/A.md). On October 17, 2026, A verified
+the configured Tiger Data connection, 55 database-backed plants, 55 persisted
+live weather forecasts, NWS monitoring for all 55 and 47 passing backend/database
+checks. See [the short handoff](BACKEND_HANDOFF.md) for B/C/D integration. Earlier notes
+below about absent DATABASE_URL, memory-only weather and the previous Git branch
+describe the scaffold, not the updated state. Frontend/browser limitations,
+unconnected strike/report/briefing workflows and the missing model still apply.
+
 ## Completed
 
 - Local Git repository initialized on main.
