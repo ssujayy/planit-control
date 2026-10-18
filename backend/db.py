@@ -47,6 +47,32 @@ def check_database():
         conn.execute('SELECT 1')
 
 
+def save_radar_feed(payload, attempted_at):
+    json.dumps(payload, allow_nan=False)
+    with connection() as conn:
+        conn.execute('''INSERT INTO radar_feed (source, payload, last_attempt_at, last_success_at)
+            VALUES ('RainViewer', %s, %s, %s)
+            ON CONFLICT (source) DO UPDATE SET payload = EXCLUDED.payload,
+                last_attempt_at = EXCLUDED.last_attempt_at, last_success_at = EXCLUDED.last_success_at,
+                error_code = NULL
+            WHERE radar_feed.last_attempt_at <= EXCLUDED.last_attempt_at''',
+            (Jsonb(payload), timestamp(attempted_at), timestamp(payload['retrieved_at'])))
+
+
+def record_radar_failure(attempted_at):
+    with connection() as conn:
+        conn.execute('''INSERT INTO radar_feed (source, last_attempt_at, error_code)
+            VALUES ('RainViewer', %s, 'radar_unavailable')
+            ON CONFLICT (source) DO UPDATE SET last_attempt_at = EXCLUDED.last_attempt_at,
+                error_code = EXCLUDED.error_code
+            WHERE radar_feed.last_attempt_at <= EXCLUDED.last_attempt_at''', (timestamp(attempted_at),))
+
+
+def latest_radar_feed():
+    with connection() as conn:
+        return conn.execute('SELECT * FROM radar_feed WHERE source = %s', ('RainViewer',)).fetchone()
+
+
 def migrate():
     """Apply additive SQL files atomically, serializing concurrent startup."""
     applied = []

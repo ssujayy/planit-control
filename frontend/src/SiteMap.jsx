@@ -1,10 +1,11 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { HAZARD_LABELS } from './outlook';
+import RadarControls from './RadarControls';
 
-export default function SiteMap({ sites, selectedId, onSelect }) {
+export default function SiteMap({ sites, selectedId, onSelect, storageMode }) {
   const element = useRef(null), map = useRef(null), layer = useRef(null);
+  const [readyMap, setReadyMap] = useState(null);
   const select = useRef(onSelect);
   const lastRender = useRef('');
   select.current = onSelect;
@@ -20,9 +21,13 @@ export default function SiteMap({ sites, selectedId, onSelect }) {
     updateMinZoom();
     map.current.on('resize', updateMinZoom);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors', maxZoom: 18,
+      attribution: '&copy; OpenStreetMap contributors · <a href="https://www.rainviewer.com/" target="_blank" rel="noreferrer">RainViewer</a>', maxZoom: 18, className: 'base-map-tiles',
     }).addTo(map.current);
+    const radarPane = map.current.createPane('rainRadar');
+    radarPane.style.zIndex = '350';
+    radarPane.style.pointerEvents = 'none';
     layer.current = L.layerGroup().addTo(map.current);
+    setReadyMap(map.current);
     return () => { map.current.remove(); map.current = null; };
   }, []);
   useEffect(() => {
@@ -42,7 +47,7 @@ export default function SiteMap({ sites, selectedId, onSelect }) {
         keyboard: false, zIndexOffset: selected ? 1000 : 0,
       });
       const text = document.createElement('span');
-      text.textContent = `${site.attention_rank ? `#${site.attention_rank} · ` : ''}${site.name} · ${HAZARD_LABELS[state]} · ${site.model_label ?? ''} · ${site.coverage_label ?? 'Coverage unavailable'}`;
+      text.textContent = [site.attention_rank ? `#${site.attention_rank}` : null, site.name].filter(Boolean).join(' · ');
       marker.bindTooltip(text).on('click', () => select.current(site.id));
       marker.addTo(layer.current);
     });
@@ -53,6 +58,7 @@ export default function SiteMap({ sites, selectedId, onSelect }) {
     const selected = sites.find(site => site.id === selectedId);
     if (selected) map.current.panInside([selected.latitude, selected.longitude], { padding: [35, 35], animate: false });
   }, [sites, selectedId]);
-  return <div ref={element} className="map" aria-label="Power plant locations; use the adjacent keyboard-accessible site list to select a site" />;
+  return <><div ref={element} className="map" aria-label="Power plant locations and rain radar; use the adjacent keyboard-accessible site list to select a site" />
+    {readyMap && <RadarControls map={readyMap} site={sites.find(site => site.id === selectedId)} enabled={storageMode === 'live'}/>}</>;
 }
 

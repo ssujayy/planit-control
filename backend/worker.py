@@ -45,6 +45,8 @@ def build_jobs(*, site_ids=None, job_modules=(), once=False):
     prediction_callback = partial(refresh_predictions, site_ids=site_ids) if once else PredictionRotation(site_ids)
     jobs.append(Job('predictions', prediction_callback, 15))
     jobs.append(Job('briefings', partial(scheduled_briefings, site_ids=site_ids), 30))
+    from .radar import refresh_radar
+    jobs.append(Job('radar', refresh_radar, 300))
     for specification in job_modules:
         if specification in ('backend.briefings:worker_jobs', 'backend.predictions:worker_jobs'):
             continue  # Backward-compatible explicit registration of built-in jobs.

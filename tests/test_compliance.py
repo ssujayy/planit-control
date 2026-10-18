@@ -62,7 +62,7 @@ def test_both_local_days_persist_real_model_results(monkeypatch):
 
 def test_default_worker_includes_bounded_prediction_and_briefing_jobs():
     jobs = worker.build_jobs()
-    assert [job.name for job in jobs] == ['weather', 'official_alerts', 'hydrology', 'predictions', 'briefings']
+    assert [job.name for job in jobs] == ['weather', 'official_alerts', 'hydrology', 'predictions', 'briefings', 'radar']
     assert isinstance(jobs[3].callback, predictions.PredictionRotation)
     explicit = worker.build_jobs(job_modules=['backend.briefings:worker_jobs', 'backend.predictions:worker_jobs'])
     assert len(explicit) == len(jobs)

@@ -1,5 +1,106 @@
 # Setup status
 
+- October 18, 2026: simplified map hover labels to the marker number and plant name only.
+
+- October 18, 2026: removed website notices for unimplemented automatic lightning/fire detection and SMS/push delivery, including list/tooltips, empty states, diagnostics and rendered saved briefings. Temporary failures in weather, official alerts, radar, model results and shared storage remain visible. Raw API/storage evidence and requirement gaps remain unchanged.
+
+- October 18, 2026: moved unavailable-monitoring messages out of normal map tooltips; diagnostics remain available through `?debug=1`.
+
+- October 18, 2026: normalized the four hazard-report fields to 44px tall and reduced the file-picker button/padding to fit.
+
+- October 18, 2026: styled the photo file-picker button with theme colors, the shared border, matching font and 3px corners.
+
+- October 18, 2026: set text-entry inputs and textareas to 3px corners and centered the Report a site hazard heading.
+
+- October 18, 2026: darkened the dark theme page background to `#0b131a`.
+
+- October 18, 2026: aligned Forecast planning periods with the weather panel's 24px content inset and added 24px bottom padding.
+
+- October 18, 2026: added a top-right Dark mode / Light mode button. The theme covers cards, forms, controls and map tiles; the browser saves the choice locally.
+
+- October 18, 2026: removed the header Debug button. Diagnostics remain available
+  through `?debug=1`; normal URLs ignore older saved debug preferences.
+
+- October 18, 2026: hid coordinate-input spinner arrows and capitalized hazard
+  category labels in forms/history, preserving lowercase submitted/filter values.
+
+- October 18, 2026: moved the lightning card's automatic-detection-unavailable
+  paragraph into Debug as requested. Countdown and crew recording remain visible.
+
+- October 18, 2026: removed the coverage badge and unavailable-feed line from
+  the normal At this site card. Debug retains coverage and detailed reasons.
+
+- October 18, 2026: centered the map status legend and horizontally/vertically
+  centered site numbers inside consistent circular marker labels.
+
+- October 18, 2026: the desktop site list now fills its panel's remaining height
+  beside the map, with scrolling retained. Increased map-legend bottom padding
+  to 32px. Mobile retains a bounded 360px list.
+
+- October 18, 2026: simplified the radar panel at the human's request: removed
+  precipitation intensity scale, selected-site rainfall line, explanatory paragraph
+  and bottom map footnote. RainViewer credit moved into Leaflet's attribution
+  corner. Error/freshness states and controls remain. Historical frame selection
+  now uses the newest frame to assess feed freshness, avoiding a false stale label.
+
+## Rain radar map - October 18, 2026
+
+- Verified the actual RainViewer public manifest and a Miami PNG before wiring
+  fields. Source check: data/source_checks/radar_integration.json. No API key or
+  new dependency. Public API use is educational; source/terms are credited.
+- Added an optional rain layer (on initially), dark map, labeled frame time,
+  history slider, previous/next, Play/Pause, Latest and Focus selected site.
+  Current modeled rain for the selected site remains separate from radar imagery.
+  Site markers, selection/list scrolling and map-control shapes are preserved.
+- The one existing worker now refreshes global radar metadata every five minutes.
+  Migration **006_radar_feed.sql applied** to Tiger Data, with 13 genuine frames
+  saved. Metadata GET reads storage only. PNG delivery is backend-only with
+  allowlisted stored frame paths, coordinate/image validation, bounded in-process
+  LRU and browser caching. Failed refresh preserves the last successful manifest.
+- Stale data, missing images/provider failures and inventory-mode unavailability
+  are visible. Radar is recent precipitation evidence; no forecast, lightning
+  detection, complete coverage or no-rain conclusion is inferred from blank areas.
+  Frame generation time is not exact per-pixel observation time. Native radar
+  resolution ends at zoom 7; higher map zooms enlarge the available tiles.
+- **210 Python/database tests passed, 1 skipped** (ignored historical data),
+  **17 frontend checks passed**; build passed. Chromium radar fixtures passed
+  playback/time/toggle/focus checks, missing-tile recovery and provider outage.
+  Real database/radar PNG checks and 55-site desktop/mobile Chromium passed.
+  Full report/briefing/polling/error/inventory browser flow also passed.
+  Inspected real radar screenshot with actual echoes offshore South Florida.
+- Updated Flask and the single leased worker are running on the same ports.
+  Preserved all pending styling changes. No commit, push or deployment.
+
+Automatic live strike detection and the other previously documented challenge
+gaps remain open; a rain radar layer does not complete those integrations.
+
+- October 18, 2026: increased separator margins to 28px vertically and removed
+  the top Connected label from the default view; database status remains in Debug.
+
+- October 18, 2026: added horizontal separators after Crew alerts and immediately
+  before Report a site hazard; each uses background #97dbdb, height 3px, border none.
+
+- October 18, 2026: set dashboard divs, panels and alert notices to a 3px border
+  radius. Map containers and their contents are excluded, restoring original
+  circular markers and Leaflet control corners. Dropdowns retain square corners.
+
+- October 18, 2026: clicking a map site now selects and reveals its matching
+  entry in the left-hand site list. Search/view filters clear to reveal hidden
+  sites; repeated clicks work. Only the list scrolls, leaving page position and
+  keyboard focus intact. Build, 17 frontend checks and focused desktop/mobile
+  Chromium checks passed with fixtures and all 55 real database-backed sites.
+
+- October 18, 2026: removed rounded corners from all dropdown selectors,
+  including History category, History status, Hazard category, Show and Site data.
+
+- October 18, 2026: clarified `#97dbdb` is the dashboard border color, applied
+  across cards, panels, alerts, buttons, dividers, map markers and input fields.
+
+- October 18, 2026: changed the website's page background to `#ebffff` as requested.
+- October 18, 2026: applied `#00518f` to all website text following clarification,
+  including alert states, filled controls, placeholders and Leaflet text. Lightened
+  filled controls and marker-label backgrounds to keep the blue text readable.
+
 ## Readable dashboard, lightning recording and reports - October 18, 2026, 3:35 AM ET
 
 - Fixed the main model card's one-decimal rounding. Cards, queue, map and newly

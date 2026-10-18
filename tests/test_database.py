@@ -36,7 +36,7 @@ def weather_payload():
 
 
 def test_migrations_and_seed_are_repeatable(isolated_database):
-    assert db.migrate() == ['001_weather_worker.sql', '002_workflow_storage.sql', '003_operational_events.sql', '004_compliance.sql', '005_hydrology_context.sql']
+    assert db.migrate() == ['001_weather_worker.sql', '002_workflow_storage.sql', '003_operational_events.sql', '004_compliance.sql', '005_hydrology_context.sql', '006_radar_feed.sql']
     assert db.migrate() == []
     assert db.seed_sites() == 55
     assert db.seed_sites() == 55
@@ -81,6 +81,23 @@ def test_applied_migration_changes_are_rejected(isolated_database):
     isolated_database.execute("UPDATE schema_migrations SET checksum = 'changed'")
     with pytest.raises(RuntimeError, match='has changed'):
         db.migrate()
+
+
+def test_radar_cache_persists_and_failure_does_not_erase_snapshot(isolated_database):
+    from backend.radar import normalize_manifest, TILE_HOST
+    db.migrate()
+    now = datetime.now(timezone.utc)
+    payload = normalize_manifest({'host': TILE_HOST, 'generated': int(now.timestamp()),
+        'radar': {'past': [{'time': int(now.timestamp()), 'path': '/v2/radar/fixture-frame'}]}}, now)
+    db.save_radar_feed(payload, now)
+    db.record_radar_failure(now+timedelta(seconds=1))
+    assert db.latest_radar_feed()['payload'] == payload
+    assert db.latest_radar_feed()['error_code'] == 'radar_unavailable'
+    db.save_radar_feed(payload, now)  # a delayed success cannot erase a newer failure
+    assert db.latest_radar_feed()['error_code'] == 'radar_unavailable'
+    payload['retrieved_at'] = (now+timedelta(seconds=2)).isoformat()
+    db.save_radar_feed(payload, now+timedelta(seconds=2))
+    assert db.latest_radar_feed()['error_code'] is None
 
 
 def test_snapshots_are_idempotent_and_failure_preserves_last_success(isolated_database):

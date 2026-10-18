@@ -11,6 +11,8 @@ import { floodAlert, siteRow } from './fixtures.mjs';
 
 const frontend = fileURLToPath(new URL('../', import.meta.url));
 const inventory = process.argv[2] === '--inventory';
+const scrollOnly = process.argv.includes('--map-scroll-only');
+const radarOnly = process.argv.includes('--radar-only');
 const live = ['--live', '--inventory'].includes(process.argv[2]) ? process.argv[3] : null;
 const browser = process.env.PLANIT_BROWSER || [
   'C:/Program Files/Google/Chrome/Application/chrome.exe',
@@ -34,6 +36,8 @@ const photo = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQ
 const requests = [];
 const lightningHistory = [];
 let liveOutlook;
+let failRadarTiles = false;
+let failRadarManifest = false;
 const server = createServer(async (request, response) => {
   try {
     const url = new URL(request.url, 'http://localhost');
@@ -42,9 +46,26 @@ const server = createServer(async (request, response) => {
       response.setHeader('Content-Type', 'application/json');
       if (live) {
         const upstream = await fetch(live + request.url);
+        if (upstream.headers.get('content-type')?.startsWith('image/png')) {
+          response.setHeader('Content-Type', 'image/png');
+          response.writeHead(upstream.status); response.end(Buffer.from(await upstream.arrayBuffer())); return;
+        }
         const body = await upstream.text();
         if (url.pathname === '/api/outlook' && upstream.ok) liveOutlook = JSON.parse(body);
         response.writeHead(upstream.status); response.end(body); return;
+      }
+      if (url.pathname === '/api/radar') {
+        if (failRadarManifest) { response.writeHead(502); response.end(JSON.stringify({ error: 'TEST FIXTURE radar outage' })); return; }
+        response.end(JSON.stringify({ source: 'RainViewer TEST FIXTURE', status: 'available', stale: false,
+          retrieved_at: new Date(started).toISOString(), frames: [0, 1, 2].map(index => ({
+            time: Math.floor(started / 1000) - [3600, 600, 0][index],
+            frame_time: new Date(started - [3600, 600, 0][index] * 1000).toISOString(),
+            tile_url: `/api/radar/tiles/test-radar-${index}/{z}/{x}/{y}.png`,
+          })) })); return;
+      }
+      if (url.pathname.startsWith('/api/radar/tiles/')) {
+        if (failRadarTiles) { response.writeHead(502); response.end(JSON.stringify({ error: 'TEST FIXTURE tile outage' })); return; }
+        response.setHeader('Content-Type', 'image/png'); response.setHeader('Cache-Control', 'no-store'); response.end(photo); return;
       }
       if (url.pathname === '/api/reports' && request.method === 'POST') {
         const chunks = []; for await (const chunk of request) chunks.push(chunk);
@@ -156,7 +177,15 @@ try {
       if (await evaluate(expression)) return;
       await new Promise(resolve => setTimeout(resolve, 100));
     }
-    throw new Error('Condition timed out: ' + expression);
+    const geometry = await evaluate(`(() => {
+      const list = document.querySelector('.sites'), entry = list?.querySelector('.selected');
+      return { selected: entry?.dataset.siteId, scrollTop: list?.scrollTop, clientHeight: list?.clientHeight,
+        list: list?.getBoundingClientRect().toJSON(), entry: entry?.getBoundingClientRect().toJSON(),
+        radar: document.querySelector('.radar-controls')?.textContent, mapClass: document.querySelector('.map')?.className,
+        radarLayer: document.querySelector('.rain-radar-tile')?.outerHTML.slice(0, 1000),
+        tiles: [...document.querySelectorAll('.rain-radar-tile img')].slice(0, 4).map(image => ({ src: image.src, complete: image.complete, width: image.naturalWidth, className: image.className })) };
+    })()`);
+    throw new Error('Condition timed out: ' + expression + '\n' + JSON.stringify(geometry));
   }
   const screenshots = join(frontend, 'dist', 'checks'); await mkdir(screenshots, { recursive: true });
   async function screenshot(name) {
@@ -166,24 +195,125 @@ try {
   await command('Runtime.enable'); await command('Page.enable');
   await command('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1100, deviceScaleFactor: 1, mobile: false });
   await command('Page.navigate', { url: 'http://127.0.0.1:' + server.address().port });
+  async function setDebug(enabled) {
+    const selected = await evaluate("document.querySelector('.sites .selected')?.dataset.siteId ?? null");
+    await command('Page.navigate', { url: 'http://127.0.0.1:' + server.address().port + (enabled ? '/?debug=1' : '/') });
+    await waitFor("document.querySelectorAll('.sites button').length === " + (live ? 55 : 3), live ? 25000 : 12000);
+    if (selected) {
+      await evaluate(`document.querySelector('.sites button[data-site-id="${selected}"]')?.click()`);
+      await waitFor(`document.querySelector('.sites .selected')?.dataset.siteId === ${JSON.stringify(selected)}`);
+    }
+  }
   async function selectInventory() {
-    if (!await evaluate("!!document.querySelector('.mode select')")) await evaluate("document.querySelector('.debug-toggle').click()");
+    if (!await evaluate("!!document.querySelector('.mode select')")) await setDebug(true);
     await waitFor("!!document.querySelector('.mode select')");
     await evaluate("const choice = document.querySelector('.mode select'); choice.value = 'demo'; choice.dispatchEvent(new Event('change', { bubbles: true }));");
   }
+  async function checkMapListScroll() {
+    const targetId = await evaluate("document.querySelector('.sites button:last-of-type').dataset.siteId");
+    const initialPageScroll = await evaluate('scrollY');
+    const selectedIsVisible = `(() => {
+      const list = document.querySelector('.sites');
+      const entry = list.querySelector('.selected');
+      if (entry?.dataset.siteId !== ${JSON.stringify(targetId)}) return false;
+      const bounds = list.getBoundingClientRect(), item = entry.getBoundingClientRect();
+      return item.top >= bounds.top + list.clientTop - 1 && item.bottom <= bounds.top + list.clientTop + list.clientHeight + 1;
+    })()`;
+    const clickLastMarker = "[...document.querySelectorAll('.geography .site-pin')].at(-1).click()";
+    await evaluate("document.querySelector('.sites').scrollTop = 0; " + clickLastMarker);
+    await waitFor(selectedIsVisible);
+    assert.ok(await evaluate("document.querySelector('.sites').scrollTop > 0"), 'Map selection must scroll the list.');
+    assert.equal(await evaluate('scrollY'), initialPageScroll, 'Map selection must not scroll the page.');
+    // A second click must reveal an already-selected site after manually scrolling away.
+    await evaluate("document.querySelector('.sites').scrollTop = 0; " + clickLastMarker);
+    await waitFor(selectedIsVisible);
+    await evaluate(`(() => {
+      const input = document.querySelector('.queue-controls input');
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, '__no_matching_site__');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      const select = document.querySelector('.queue-controls select');
+      select.value = 'alerts'; select.dispatchEvent(new Event('change', { bubbles: true }));
+    })()`);
+    await waitFor("document.querySelectorAll('.sites button').length === 0");
+    await evaluate(clickLastMarker);
+    await waitFor(selectedIsVisible);
+    assert.equal(await evaluate("document.querySelector('.queue-controls input').value"), '');
+    assert.equal(await evaluate("document.querySelector('.queue-controls select').value"), 'all');
+    await evaluate("document.querySelector('.geography .site-pin').click()");
+    await waitFor("document.querySelector('.sites button:first-of-type').classList.contains('selected')");
+    console.log('Map selection reveals its list entry, including repeated clicks and filtered-out sites, without moving the page.');
+  }
+  async function checkRadar() {
+    if (inventory) return;
+    await waitFor("document.querySelector('.radar-timeline') && !!document.querySelector('.rain-radar-tile .leaflet-tile-loaded')", live ? 30000 : 12000);
+    assert.equal(await evaluate("document.querySelector('.radar-time').textContent.includes('Latest')"), true);
+    assert.equal(await evaluate("!!document.querySelector('.radar-scale, .radar-site, .radar-note, .map-note')"), false);
+    assert.equal(await evaluate("!!document.querySelector('.geography .leaflet-control-attribution a[href=\"https://www.rainviewer.com/\"]')"), true);
+    await evaluate("document.querySelector('.radar-step-back').click()");
+    await waitFor("document.querySelector('.radar-time').textContent.includes('History')");
+    if (!live) {
+      await evaluate("document.querySelector('.radar-step-back').click()");
+      await waitFor("document.querySelector('.radar-timeline').value === '0'");
+      assert.equal(await evaluate("document.querySelector('.radar-time').textContent.includes('Needs update')"), false, 'Choosing older history must not mark a fresh feed stale.');
+    }
+    const selectedFrame = await evaluate("document.querySelector('.radar-timeline').value");
+    await evaluate("document.querySelector('.radar-play').click()");
+    await waitFor("document.querySelector('.radar-timeline').value !== " + JSON.stringify(selectedFrame));
+    await evaluate("document.querySelector('.radar-play').click(); document.querySelector('.radar-latest').click()");
+    await waitFor("document.querySelector('.radar-time').textContent.includes('Latest')");
+    await evaluate("document.querySelector('.radar-toggle').click()");
+    await waitFor("!document.querySelector('.rain-radar-tile') && document.querySelector('.radar-time').textContent.includes('off')");
+    assert.equal(await evaluate("!!document.querySelector('.geography .site-pin.is-selected')"), true);
+    await evaluate("document.querySelector('.radar-toggle').click(); document.querySelector('.radar-dark-toggle').click()");
+    await waitFor("!document.querySelector('.map').classList.contains('radar-dark')");
+    await evaluate("document.querySelector('.radar-dark-toggle').click(); document.querySelector('.radar-focus').click()");
+    await waitFor("document.querySelector('.map').classList.contains('radar-dark') && !!document.querySelector('.rain-radar-tile .leaflet-tile-loaded')", live ? 30000 : 12000);
+    if (!live) {
+      failRadarTiles = true;
+      await evaluate("document.querySelector('.radar-step-back').click()");
+      await waitFor("document.querySelector('.radar-warning')?.textContent.includes('could not load')");
+      failRadarTiles = false;
+      await evaluate("document.querySelector('.radar-latest').click()");
+      await waitFor("!document.querySelector('.radar-warning') && !!document.querySelector('.rain-radar-tile .leaflet-tile-loaded')");
+    }
+    console.log('Compact radar controls, source credit, history, playback, latest, toggles and selected-site focus verified.');
+  }
   if (inventory) await selectInventory();
   await waitFor("document.querySelectorAll('.sites button').length === " + (live ? 55 : 3), live ? 25000 : 12000);
-  assert.equal(await evaluate("document.querySelector('.debug-toggle').getAttribute('aria-pressed')"), inventory ? 'true' : 'false');
+  assert.equal(await evaluate("!!document.querySelector('.debug-toggle')"), false, 'The Debug button must not be rendered.');
+  assert.equal(await evaluate("new URLSearchParams(location.search).get('debug') === '1'"), inventory);
+  await evaluate("document.querySelector('.theme-toggle').click()");
+  await waitFor("document.documentElement.dataset.theme === 'dark'");
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('.panel')).backgroundColor"), 'rgb(25, 40, 51)');
+  assert.equal(await evaluate("document.querySelector('.theme-toggle').getAttribute('aria-pressed')"), 'true');
+  await screenshot('theme-dark-desktop');
+  await command('Page.reload');
+  await waitFor("document.documentElement.dataset.theme === 'dark' && !!document.querySelector('.theme-toggle')");
+  assert.equal(await evaluate("document.querySelector('.theme-toggle').textContent"), 'Light mode');
+  await command('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
+  assert.equal(await evaluate('document.documentElement.scrollWidth <= innerWidth + 1'), true);
+  await screenshot('theme-dark-mobile');
+  await evaluate("document.querySelector('.theme-toggle').click()");
+  await waitFor("document.documentElement.dataset.theme === 'light'");
+  assert.equal(await evaluate("getComputedStyle(document.documentElement).backgroundColor"), 'rgb(235, 255, 255)');
+  await command('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1100, deviceScaleFactor: 1, mobile: false });
+  if (inventory) await selectInventory();
+  await waitFor("document.querySelectorAll('.sites button').length === " + (live ? 55 : 3), live ? 25000 : 12000);
+  console.log('Dark mode toggle, saved preference, light mode restoration and mobile layout passed.');
   if (!inventory) {
     assert.equal(await evaluate("!!document.querySelector('.mode select') || !!document.querySelector('.integration-panel')"), false);
-    assert.equal(await evaluate("document.body.textContent.includes('Automatic lightning detection is unavailable')"), true);
+    assert.equal(await evaluate("document.querySelector('.lightning-recording').closest('article').textContent.includes('Automatic lightning detection is unavailable')"), false);
     await waitFor("!!document.querySelector('.briefing-display')");
     assert.equal(requests.some(path => /^\/api\/sites\/\d+\/briefing-preview$/.test(path)), true);
   }
   assert.equal(await evaluate("!!document.querySelector('.leaflet-marker-icon')"), true);
   assert.equal(await evaluate('document.documentElement.scrollWidth <= innerWidth + 1'), true);
   assert.equal(await evaluate("document.body.innerText.includes('Foundation build') || document.body.innerText.includes('Fetch current weather')"), false);
-  if (inventory) {
+  await checkMapListScroll();
+  if (radarOnly) await checkRadar();
+  if (scrollOnly || radarOnly) {
+    console.log('Focused map-to-list checks passed on desktop.');
+  } else if (inventory) {
     assert.equal(await evaluate("document.querySelector('#reports').textContent.includes('File inventory has no report storage')"), true);
     assert.equal(await evaluate("!!document.querySelector('#reports form')"), false);
     console.log('Actual Flask app: 55 real inventory sites, unavailable monitoring and disabled shared writes verified.');
@@ -200,9 +330,9 @@ try {
       assert.equal(await evaluate("[...document.querySelectorAll('.weather-grid > div')].filter(node => node.querySelector('small')?.textContent.startsWith('Tomorrow')).every(node => !node.querySelector('strong').textContent.includes('Unavailable'))"), true);
     }
     await waitFor("document.querySelectorAll('#briefings .forecast-facts > div').length === 5");
-    await evaluate("document.querySelector('.debug-toggle').click()");
+    await setDebug(true);
     await waitFor("!!document.querySelector('.metadata') && !!document.querySelector('.integration-panel')");
-    await evaluate("document.querySelector('.debug-toggle').click()");
+    await setDebug(false);
     await waitFor("!document.querySelector('.metadata') && !document.querySelector('.integration-panel')");
     await evaluate("document.querySelector('.alert-toast button')?.click(); document.querySelector('#briefings').scrollIntoView({ behavior: 'instant' })");
     await screenshot('live-tomorrow-report');
@@ -242,7 +372,7 @@ try {
     assert.equal(await evaluate("[...document.querySelectorAll('.weather-grid > div')].find(node => node.querySelector('small')?.textContent.includes('surface soil moisture')).querySelector('strong').textContent"), '0.55 m³/m³');
     await evaluate("[...document.querySelectorAll('.sites button')].find(button => button.innerText.includes('Fixture plant 3')).click()");
     await waitFor("document.querySelector('.model-score').textContent.includes('9.00')");
-    await evaluate("document.querySelector('.debug-toggle').click()");
+    await setDebug(true);
     await waitFor("!!document.querySelector('.mode select') && !!document.querySelector('.integration-panel')");
     assert.equal(await evaluate("document.querySelector('.metadata').textContent.includes('TEST-ARTIFACT')"), true);
     assert.equal(await evaluate("document.querySelector('.today-index').textContent.includes('4.25')"), true);
@@ -273,11 +403,14 @@ try {
   await command('Page.reload');
   if (inventory) await selectInventory();
   await waitFor("document.querySelectorAll('.sites button').length === " + (live ? 55 : 3), live ? 25000 : 12000);
-  if (!live) {
-    assert.equal(await evaluate("document.querySelector('.debug-toggle').getAttribute('aria-pressed')"), 'true', 'Debug preference survives reload.');
-    await evaluate("document.querySelector('.debug-toggle').click()");
+  if (!live && !scrollOnly && !radarOnly) {
+    assert.equal(await evaluate("new URLSearchParams(location.search).get('debug')"), '1', 'Debug URL survives reload.');
+    await setDebug(false);
     await waitFor("!document.querySelector('.integration-panel')");
   }
+  await command('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
+  await checkMapListScroll();
+  if (radarOnly) await checkRadar();
   assert.equal(await evaluate('document.documentElement.scrollWidth <= innerWidth + 1'), true, 'Mobile layout overflows horizontally.');
   await screenshot(live ? 'live-mobile' : 'fixture-mobile');
   await evaluate("document.querySelector('#site-details').scrollIntoView({ behavior: 'instant' })");
@@ -288,8 +421,23 @@ try {
     await screenshot('live-mobile-tomorrow-report');
   }
   if (live) {
+    if (radarOnly) {
+      await evaluate("document.querySelector('.alert-toast button')?.click(); document.querySelector('.radar-controls').scrollIntoView({ behavior: 'instant' })");
+      await screenshot('live-mobile-radar-controls');
+    }
     await command('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1100, deviceScaleFactor: 1, mobile: false });
     await screenshot('live-desktop');
+  }
+  if (radarOnly) {
+    await evaluate("document.querySelector('.alert-toast button')?.click(); document.querySelector('.geography').scrollIntoView({ behavior: 'instant' })");
+    await screenshot(live ? 'live-radar' : 'fixture-radar');
+    if (!live) {
+      failRadarManifest = true;
+      await command('Page.reload');
+      await waitFor("document.querySelector('.radar-time')?.textContent.includes('Unavailable') && !!document.querySelector('.geography .site-pin')");
+      assert.equal(await evaluate("document.querySelector('.radar-warning').textContent.includes('radar outage')"), true);
+      failRadarManifest = false;
+    }
   }
   assert.equal(requests.some(path => /\/api\/sites\/\d+\/weather/.test(path)), false, 'The dashboard must not trigger provider fetches.');
   assert.deepEqual(errors, [], 'Browser raised JavaScript errors.');

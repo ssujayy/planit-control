@@ -112,6 +112,8 @@ def create_app():
             return jsonify({'error': str(error), 'code': 'weather_unavailable'}), 502
 
     from .ops_routes import ops_bp; app.register_blueprint(ops_bp)  # Workstream B operational events
+    from .radar import radar_bp
+    app.register_blueprint(radar_bp)
     @app.get('/')
     @app.get('/<path:path>')
     def frontend(path='index.html'):

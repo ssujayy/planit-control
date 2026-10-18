@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { getJson } from './api';
-import { formatDate, formatScore, formatTime } from './outlook';
+import { briefingTextForDisplay, isUnimplementedFeed, formatDate, formatScore, formatTime } from './outlook';
 
 const categories = ['wildlife', 'heat', 'lightning', 'flooding', 'mud', 'fire', 'other', 'water', 'access'];
+const categoryLabel = value => value.charAt(0).toUpperCase() + value.slice(1);
 
 async function postJson(path, body) {
   const response = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -104,19 +105,19 @@ export function CrewReports({ site, enabled, onChanged, debug }) {
         <p>Click the map or drag the + pin to locate the hazard. Edit coordinates for keyboard access.</p>
         <div className="form-grid"><label>Latitude<input aria-label="Hazard latitude" type="number" step="any" min="-90" max="90" required value={pin.latitude} onChange={event => setPin({ ...pin, latitude: event.target.value === '' ? '' : Number(event.target.value) })}/></label>
           <label>Longitude<input aria-label="Hazard longitude" type="number" step="any" min="-180" max="180" required value={pin.longitude} onChange={event => setPin({ ...pin, longitude: event.target.value === '' ? '' : Number(event.target.value) })}/></label>
-          <label>Hazard category<select name="category" required>{categories.map(value => <option key={value}>{value}</option>)}</select></label>
+          <label>Hazard category<select name="category" required>{categories.map(value => <option key={value} value={value}>{categoryLabel(value)}</option>)}</select></label>
           <label>Take or upload a photo<input type="file" name="photo" accept="image/jpeg,image/png,image/webp" capture="environment" required/></label></div>
         <label>Description<textarea name="note" required minLength={1} maxLength={2000} rows={3} placeholder="What did you see, and where?"/></label>
         <button className="text-button" type="submit" disabled={busy}>Share hazard report</button>
       </form>
       <div className="form-grid history-filters"><label>Search history<input aria-label="Search report history" value={query} onChange={event => setQuery(event.target.value)} placeholder="Description text"/></label>
         <label>History status<select value={status} onChange={event => setStatus(event.target.value)}><option value="">All reports</option><option value="unresolved">Active</option><option value="resolved">Resolved</option></select></label>
-        <label>History category<select value={category} onChange={event => setCategory(event.target.value)}><option value="">All categories</option>{categories.map(value => <option key={value}>{value}</option>)}</select></label></div>
+        <label>History category<select value={category} onChange={event => setCategory(event.target.value)}><option value="">All categories</option>{categories.map(value => <option key={value} value={value}>{categoryLabel(value)}</option>)}</select></label></div>
       {loading && <p>Loading report history…</p>}
       {error && <p className="error" role="alert">Report history unavailable: {error}</p>}
       {data && !reports.length && <p>No reports match this history view.</p>}
       {reports.map(report => <article className="report history-report" key={report.id}>
-        <div><strong>{report.category} · {report.status === 'unresolved' ? 'Active' : 'Resolved'}</strong><p>{report.note}</p>
+        <div><strong>{categoryLabel(report.category)} · {report.status === 'unresolved' ? 'Active' : 'Resolved'}</strong><p>{report.note}</p>
           <small>{formatTime(report.observed_at, site.timezone)}{debug && ` · ${report.latitude.toFixed(5)}, ${report.longitude.toFixed(5)} · Crew report`}</small>
           {report.location_flag && <p className="integration-note">Pin is over 5 km from the inventory site. Verify its location.</p>}
           {report.status === 'unresolved' && <p><button className="text-button" disabled={busy} onClick={() => resolve(report.id)}>Mark resolved</button></p>}</div>
@@ -148,7 +149,7 @@ export function LightningRecording({ site, enabled, debug, onChanged }) {
       <button type="button" className="primary" disabled={!confirmed || busy} onClick={record}>{busy ? 'Saving…' : 'Record lightning'}</button>
       <details className="lightning-history"><summary>Recorded lightning holds ({data?.count ?? '…'})</summary>
         {data?.events.map(event => <p key={event.id}><strong>{formatTime(event.occurred_at, site.timezone)}</strong><br/>{event.source === 'crew-observed' ? 'Crew observation' : event.source} · {event.type.endsWith('extended') ? 'Hold extended' : 'Hold started'}{debug && <span><br/>{event.summary}</span>}</p>)}
-        {data?.count === 0 && <p>No lightning holds recorded. Automatic detection is unavailable.</p>}
+        {data?.count === 0 && <p>No lightning holds recorded.</p>}
       </details></> : <p>Recording requires a database connection.</p>}
     {message && <p role="status">{message}</p>}{(error || actionError) && <p className="error" role="alert">{actionError || error}</p>}
   </div>;
@@ -156,17 +157,18 @@ export function LightningRecording({ site, enabled, debug, onChanged }) {
 
 function BriefingDisplay({ briefing, site, debug }) {
   const display = briefing.display;
-  if (!display) return <p className="alert-copy">{briefing.body_text}</p>;
+  const missingData = (display?.missing_data ?? []).filter(value => !isUnimplementedFeed(value));
+  if (!display) return <p className="alert-copy">{briefingTextForDisplay(briefing.body_text)}</p>;
   return <div className="briefing-display">
     <p className="briefing-summary">{display.summary}</p>
     <dl className="forecast-facts">{display.conditions.map(item => <div key={item.key}><dt>{item.label}</dt><dd>{Number.isFinite(item.value) ? `${item.value} ${item.unit ?? ''}` : item.status === 'stale' ? 'Needs update' : 'Unavailable'}</dd></div>)}</dl>
     <p>Experimental model index: <strong>{formatScore(display.model?.score)}{Number.isFinite(display.model?.score) && ' / 10'}</strong></p>
     {Number.isFinite(display.model?.score) && <p className="muted">{display.model.outside_training_counties === true ? 'Outside training counties. ' : display.model.outside_training_counties == null ? 'Training location coverage unknown. ' : ''}{display.model.outside_training_range?.length > 0 && `Inputs outside training range: ${display.model.outside_training_range.join(', ')}. `}Tested on past weather; next-day forecast accuracy is unverified.</p>}
     {display.attention.length > 0 && <><h4>What needs attention</h4><ul>{display.attention.map((line, index) => <li key={index}>{line}</li>)}</ul></>}
-    {display.missing_data.length > 0 && <p className="integration-note">Some information is missing: {display.missing_data.map(value => ({ 'lightning feed': 'automatic lightning detection', model: 'model score', 'model index': 'model score', fire_detections: 'fire detection' }[value] ?? value.replaceAll('_', ' '))).join(', ')}.</p>}
+    {missingData.length > 0 && <p className="integration-note">Some information is missing: {missingData.map(value => ({ model: 'model score', 'model index': 'model score' }[value] ?? value.replaceAll('_', ' '))).join(', ')}.</p>}
     <p>Review official warnings, current lightning holds and crew reports before assigning work.</p>
     <p className="muted">Based on the forecast available {formatTime(display.based_on, site.timezone)}.</p>
-    {debug && <details><summary>Report details and model limitations</summary><p className="alert-copy">{briefing.body_text}</p><p>Generated {formatTime(briefing.generated_at, site.timezone)} · {briefing.generator}</p></details>}
+    {debug && <details><summary>Report details and model limitations</summary><p className="alert-copy">{briefingTextForDisplay(briefing.body_text)}</p><p>Generated {formatTime(briefing.generated_at, site.timezone)} · {briefing.generator}</p></details>}
   </div>;
 }
 

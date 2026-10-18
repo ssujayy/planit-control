@@ -1,5 +1,38 @@
 # Foundation API contract
 
+## Rain radar overlay (October 18, 2026)
+
+Migration `006_radar_feed.sql` adds a global `radar_feed` JSON cache with source,
+last attempt/success timestamps and error state. The existing single worker
+refreshes RainViewer's public manifest every five minutes. No plant, hazard,
+prediction or briefing shapes change; radar does not generate lightning holds.
+
+- `GET /api/radar?mode=live|demo` reads stored metadata only. Returns `source`,
+  `source_url`, `status` (`available|stale|unavailable`), `stale`, `retrieved_at`,
+  `generated_at`, `frames` (time, frame_time, tile_url), `max_native_zoom: 7`,
+  `attribution_url`, and `note`. Frame times are UTC generation times, not exact
+  per-pixel observation times. Only supplied past radar frames are exposed.
+  Freshness requires retrieval within 15 minutes and latest frame within 30
+  minutes; failed refreshes retain the last good manifest with `stale: true`.
+  No worker record yet or explicit demo mode returns unavailable with no frames.
+  Failed upstream with no stored manifest returns 502; database failure is 503.
+- `GET /api/radar/tiles/<frame_id>/<z>/<x>/<y>.png` serves bounded PNG tiles for
+  frames present in the stored manifest. Coordinates are validated (zoom 0-7),
+  hosts/paths are allowlisted, and image bodies verified/bounded. The backend
+  fetches raster images on demand and caches them in a bounded ten-minute LRU;
+  browser caching is enabled. Unknown frames/coordinates return 404; upstream
+  failures return 502. This map-image delivery path is separate from metadata
+  polling and never triggers weather/model ingestion. No provider key required.
+- Frontend overzooms native zoom 7 tiles, preserves plant markers and site/list
+  selection, labels selected historical/latest frames and stale/partial failures,
+  and credits RainViewer. Blank areas are not evidence of no rain or complete
+  coverage. Radar reflectivity is separate from modeled site precipitation.
+
+Actual public manifest and PNG response verified before wiring fields. Current
+API exposes past history; no radar nowcast is claimed. RainViewer free access is
+for personal/educational use, appropriate to this hackathon demonstration; future
+commercial use requires reviewing the provider's terms.
+
 ## Readable dashboard and lightning recording (October 18, 2026)
 
 - Model scores retain their saved numeric values. All dashboard and briefing
