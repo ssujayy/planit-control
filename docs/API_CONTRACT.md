@@ -194,3 +194,614 @@ docs/coordination/A.md. No B/C job is automatically imported or claimed working.
 
 Do not implement a catch-all endpoint that returns plausible success for unfinished features. Unknown API routes return 404. Update this file and notify affected owners before changing field names.
 
+
+## Operational events (proposed, Workstream B)
+
+Status: implemented in `backend/ops_routes.py` on top of A's repositories (`backend/db.py`). Additive only; no existing field changed. Full example responses: `docs/fixtures/ops_*.json` (each has `"fixture": true` and `http_status`). Lists below are shortened to one item.
+
+Storage: strikes and holds use A's `lightning_events` / `lightning_holds` via `db.store_lightning_event`; reports use `crew_reports`; briefings use `briefings`. B adds only `lightning_feed_status`, `replay_sessions` and `ops_events` (migration `003_operational_events.sql`). `lightning_strikes` (from B's earlier proposal) is no longer written by the application.
+
+Rules for every endpoint in this section:
+- `event_mode` is `live` or `replay` (default `live`). It is event provenance, unrelated to the storage field `mode` (live | demo). Invalid values return 400.
+- Replay responses carry `"label": "simulated replay"`; live responses carry `"label": null`. Replay never changes live holds, alerts, ranking or briefings.
+- Timestamps are UTC ISO 8601 in offset form (`+00:00`), produced with `backend.outlook.serialize`. Fields named `*_local_*` / `delivered_local_time` are site-local and say so.
+- Hazard state (`STOP_WORK`, `NO_ACTIVE_ALERTS`, or `null` = unknown) is separate from monitoring coverage (`COMPLETE`, `STALE`, `UNAVAILABLE`). Show both. `coverage.feed_connected` distinguishes a connected feed with no strikes (`COMPLETE`, no `last_event_received_at`) from a disconnected feed (`UNAVAILABLE`). The words "safe" and "all clear" are never used.
+- Errors: 400 `invalid_input`; 404 `not_found`; 409 `not_due` (live briefing before site-local 6 PM); 413 `photo_too_large`; 503 `database_unavailable` (generic message to clients, underlying driver error logged server-side without connection details; no silent fallback). Body: `{"error": "...", "code": "..."}`.
+
+### Lightning
+
+`GET /api/sites/{id}/lightning?event_mode=live|replay` - one site's hold and coverage. "Held" is computed from `lightning_holds.hold_until` and the clock (replay uses the replay clock). `hazard.last_strike` mirrors `lightning_holds.source` / `last_strike_at`. With no live feed connected, live coverage is `UNAVAILABLE` and `hazard.state` is `null`.
+
+Live, no feed connected (`ops_lightning_live.json`):
+```json
+{
+  "as_of": "2026-10-17T22:00:00+00:00",
+  "clock": "server",
+  "coverage": {
+    "feed_connected": false,
+    "last_event_received_at": null,
+    "last_feed_check_at": null,
+    "note": "No live lightning feed is connected. The absence of a hold is not evidence of no strikes.",
+    "source": "live-strike-feed",
+    "status": "UNAVAILABLE"
+  },
+  "event_mode": "live",
+  "hazard": {
+    "hold_active": false,
+    "hold_until": null,
+    "last_strike": null,
+    "seconds_remaining": 0,
+    "site_id": 663,
+    "site_name": "Deerhaven Generating Station",
+    "state": null,
+    "state_reason": "Lightning hazard state unknown: monitoring coverage is UNAVAILABLE.",
+    "type": "lightning"
+  },
+  "hold_minutes": 30,
+  "label": null,
+  "note": "Lightning hold status covers only lightning. When the countdown ends, only the lightning hold is lifted; other hazards and feed coverage are unchanged.",
+  "radius_miles": 10,
+  "site_id": 663
+}
+```
+
+Replay, during a hold (`ops_lightning_replay_hold.json`):
+```json
+{
+  "as_of": "2026-10-17T22:20:00+00:00",
+  "clock": "replay",
+  "coverage": {
+    "feed_connected": true,
+    "last_event_received_at": "2026-10-17T22:20:00+00:00",
+    "last_feed_check_at": "2026-10-17T22:20:00+00:00",
+    "note": "Simulated replay. Not real lightning data.",
+    "source": "simulated replay script",
+    "status": "COMPLETE"
+  },
+  "event_mode": "replay",
+  "hazard": {
+    "hold_active": true,
+    "hold_until": "2026-10-17T22:40:00+00:00",
+    "last_strike": {
+      "occurred_at": "2026-10-17T22:10:00+00:00",
+      "source": "simulated-replay"
+    },
+    "seconds_remaining": 1200,
+    "site_id": 663,
+    "site_name": "Deerhaven Generating Station",
+    "state": "STOP_WORK",
+    "state_reason": "Lightning strike within 10 miles in the last 30 minutes.",
+    "type": "lightning"
+  },
+  "hold_minutes": 30,
+  "label": "simulated replay",
+  "note": "Lightning hold status covers only lightning. When the countdown ends, only the lightning hold is lifted; other hazards and feed coverage are unchanged.",
+  "radius_miles": 10,
+  "site_id": 663
+}
+```
+
+`GET /api/lightning/holds?event_mode=live|replay` - active holds only, longest remaining first, plus coverage (`ops_lightning_holds.json`):
+```json
+{
+  "as_of": "2026-10-17T22:20:00+00:00",
+  "count": 3,
+  "coverage": {
+    "feed_connected": true,
+    "last_event_received_at": "2026-10-17T22:20:00+00:00",
+    "last_feed_check_at": "2026-10-17T22:20:00+00:00",
+    "note": "Simulated replay. Not real lightning data.",
+    "source": "simulated replay script",
+    "status": "COMPLETE"
+  },
+  "event_mode": "replay",
+  "hold_minutes": 30,
+  "holds": [
+    {
+      "hold_active": true,
+      "hold_until": "2026-10-17T22:45:00+00:00",
+      "last_strike": {
+        "occurred_at": "2026-10-17T22:15:00+00:00",
+        "source": "simulated-replay"
+      },
+      "seconds_remaining": 1500,
+      "site_id": 6051,
+      "site_name": "Edwin I Hatch"
+    }
+  ],
+  "label": "simulated replay",
+  "note": "Lightning hold status covers only lightning. When the countdown ends, only the lightning hold is lifted; other hazards and feed coverage are unchanged.",
+  "radius_miles": 10
+}
+```
+
+`POST /api/lightning/strikes` - JSON body. Only `event_mode: "replay"` is accepted over HTTP, and only while a replay session is running (otherwise 400). Live strikes come only from a configured live feed inside the worker. Sites within 10 miles (16.0934 km, haversine) are passed to `db.store_lightning_event`, which deduplicates `(source, event_mode, event_id)` and sets `hold_until = GREATEST(existing, strike + 30 min)`. A duplicate returns 200 with `accepted: false, duplicate: true`. `effect` is `started`, `extended` or `no_change_older_strike`.
+
+Request:
+```json
+{
+  "event_id": "demo-manual-001",
+  "source": "simulated-replay",
+  "latitude": 29.7592,
+  "longitude": -82.3545,
+  "occurred_at": "2026-10-17T22:20:00+00:00",
+  "event_mode": "replay"
+}
+```
+
+Response 200 (`ops_strike_ingest.json`):
+```json
+{
+  "accepted": true,
+  "affected_sites": [
+    {
+      "distance_km": 3.22,
+      "distance_miles": 2.0,
+      "effect": "extended",
+      "hold_until": "2026-10-17T22:50:00+00:00",
+      "site_id": 663,
+      "site_name": "Deerhaven Generating Station"
+    }
+  ],
+  "duplicate": false,
+  "event_mode": "replay",
+  "label": "simulated replay",
+  "strike": {
+    "event_id": "demo-manual-001",
+    "latitude": 29.7592,
+    "longitude": -82.35446,
+    "occurred_at": "2026-10-17T22:20:00+00:00",
+    "source": "simulated-replay"
+  }
+}
+```
+
+### Simulated replay
+
+`POST /api/replay/sessions` - body `{"speed": 10}` (1-120, default 10). Deletes all `event_mode = 'replay'` rows (never live rows, never `lightning_strikes`), starts a session in `replay_sessions`, and replays `docs/replay/strikes.json` on one replay clock: `replay_now = replay_epoch + (wall_now - started_at) * speed`. Scripted strikes are applied when replay-mode endpoints are read. Response 201 (`ops_replay_session.json`):
+```json
+{
+  "active": true,
+  "delivered_strikes": 1,
+  "label": "simulated replay",
+  "note": "Simulated replay. Replay timestamps come from the replay clock and are not real observations.",
+  "replay_elapsed_seconds": 0,
+  "replay_now": "2026-10-17T22:00:00+00:00",
+  "scripted_strikes": 9,
+  "session": {
+    "replay_epoch": "2026-10-17T22:00:00+00:00",
+    "session_id": "61caec5d845d",
+    "speed": 10.0,
+    "started_at": "2026-10-17T22:00:00+00:00"
+  }
+}
+```
+
+`GET /api/replay/session` - same shape; `{"active": false, "session": null, "replay_now": null, ...}` when none is running.
+
+`POST /api/replay/reset` - removes replay rows only:
+```json
+{
+  "reset": true,
+  "active": false,
+  "label": "simulated replay",
+  "note": "All simulated replay holds, events and briefings were removed. Live data was not touched."
+}
+```
+
+### Crew reports
+
+`POST /api/reports` - `multipart/form-data` with `site_id`, `latitude`, `longitude`, `category` (exactly: wildlife | water | access | fire | other), `note` (required, 1-2000 characters) and `photo` (required; JPEG, PNG or WebP verified by file signature; at most 5 MiB; stored in `crew_reports.photo`). `observed_at` is server time. More than 5 km from the site gives `location_flag: "far_from_site"` (derived, not stored) but is accepted. Reports are always real (`event_mode: "live"`). Response 201 (`ops_report_created.json`):
+```json
+{
+  "report": {
+    "category": "wildlife",
+    "created_at": "2026-10-17T22:02:00+00:00",
+    "distance_from_site_km": 0.19,
+    "event_mode": "live",
+    "evidence_type": "crew_report",
+    "has_photo": true,
+    "id": "b5de736f-e56d-46e0-be9d-dc59d5bc8190",
+    "latitude": 29.7601,
+    "location_flag": null,
+    "longitude": -82.3861,
+    "note": "Alligator seen near the north culvert.",
+    "observed_at": "2026-10-17T22:02:00+00:00",
+    "photo_content_type": "image/png",
+    "photo_url": "/api/reports/b5de736f-e56d-46e0-be9d-dc59d5bc8190/photo",
+    "resolved_at": null,
+    "site_id": 663,
+    "status": "unresolved"
+  }
+}
+```
+
+`GET /api/reports?site_id={id}` - site history, newest first, no image bytes. `current_unresolved` is current evidence; `history` is every report including resolved ones. `status` is derived from `resolved_at` (`ops_reports.json`):
+```json
+{
+  "as_of": "2026-10-17T22:04:00+00:00",
+  "counts": {
+    "total": 2,
+    "unresolved": 1
+  },
+  "current_unresolved": [
+    {
+      "category": "wildlife",
+      "created_at": "2026-10-17T22:02:00+00:00",
+      "distance_from_site_km": 0.19,
+      "event_mode": "live",
+      "evidence_type": "crew_report",
+      "has_photo": true,
+      "id": "b5de736f-e56d-46e0-be9d-dc59d5bc8190",
+      "latitude": 29.7601,
+      "location_flag": null,
+      "longitude": -82.3861,
+      "note": "Alligator seen near the north culvert.",
+      "observed_at": "2026-10-17T22:02:00+00:00",
+      "photo_content_type": "image/png",
+      "photo_url": "/api/reports/b5de736f-e56d-46e0-be9d-dc59d5bc8190/photo",
+      "resolved_at": null,
+      "site_id": 663,
+      "status": "unresolved"
+    }
+  ],
+  "event_mode": "live",
+  "history": [
+    {
+      "category": "access",
+      "created_at": "2026-10-17T22:03:00+00:00",
+      "distance_from_site_km": 0.19,
+      "event_mode": "live",
+      "evidence_type": "crew_report",
+      "has_photo": true,
+      "id": "cf9c5b30-1067-411c-b03f-65c04c16b8a7",
+      "latitude": 29.7601,
+      "location_flag": null,
+      "longitude": -82.3861,
+      "note": "Access road rutted at gate 2.",
+      "observed_at": "2026-10-17T22:03:00+00:00",
+      "photo_content_type": "image/png",
+      "photo_url": "/api/reports/cf9c5b30-1067-411c-b03f-65c04c16b8a7/photo",
+      "resolved_at": "2026-10-17T22:04:00+00:00",
+      "site_id": 663,
+      "status": "resolved"
+    }
+  ],
+  "note": "Crew reports are field observations from people on site. \"No recent reports\" does not mean no hazard.",
+  "site_id": 663
+}
+```
+
+`GET /api/reports/{id}/photo` - the image bytes with the stored `Content-Type` and `X-Content-Type-Options: nosniff`; 404 when the report does not exist.
+
+`POST /api/reports/{id}/resolve` - idempotent; sets `resolved_at` once and the report stays in history (`ops_report_resolved.json`):
+```json
+{
+  "report": {
+    "category": "access",
+    "created_at": "2026-10-17T22:03:00+00:00",
+    "distance_from_site_km": 0.19,
+    "event_mode": "live",
+    "evidence_type": "crew_report",
+    "has_photo": true,
+    "id": "cf9c5b30-1067-411c-b03f-65c04c16b8a7",
+    "latitude": 29.7601,
+    "location_flag": null,
+    "longitude": -82.3861,
+    "note": "Access road rutted at gate 2.",
+    "observed_at": "2026-10-17T22:03:00+00:00",
+    "photo_content_type": "image/png",
+    "photo_url": "/api/reports/cf9c5b30-1067-411c-b03f-65c04c16b8a7/photo",
+    "resolved_at": "2026-10-17T22:04:00+00:00",
+    "site_id": 663,
+    "status": "resolved"
+  }
+}
+```
+
+### Briefings
+
+One briefing per `(site_id, event_mode, delivery_local_date)`, enforced by A's `briefings` table. `delivery_local_date` is the site-local date of the 6 PM delivery; `forecast_target_date` (stored as `target_date`) is the next local day. `body_text` is stored as `body`; the full structured briefing is stored in `facts`. Forecast, official alerts and the model index come from A's stored Outlook evidence when available; otherwise they read "unavailable" and are listed in `missing_inputs`. Scheduled live briefings come from A's single worker via `backend.briefings:worker_jobs` (`Job('briefings', scheduled_briefings, 30)`).
+
+`GET /api/briefings?site_id={id}&event_mode=live|replay` - `site_id` optional. Shape: `{"site_id", "event_mode", "label", "briefings": [<briefing>], "count", "as_of"}` (`ops_briefings.json`).
+
+`POST /api/briefings/generate` - body `{"site_id": 663, "event_mode": "replay"}` (default `replay`). Uses the same idempotent function as the scheduler. `replay` generates at any time on the replay clock. `live` works only after site-local 6 PM (otherwise 409 `not_due`). Returns 201 `{"created": true, ...}` or 200 `{"created": false, ...}` (`ops_briefing_generate.json`, sections shortened):
+```json
+{
+  "briefing": {
+    "body_text": "SIMULATED REPLAY. Next-day briefing for Deerhaven Generating Station (America/New_York). Delivery date 2026-10-17 at 6:00 PM site-local time; forecast target date 2026-10-18.\n\nTomorrow's forecast\nForecast unavailable: no stored next-day forecast for this site. No forecast values are shown.\n\nToday's evidence\nOfficial alerts: unavailable. The absence of alerts here is not evidence that no warnings exist.\nLightning holds today: 1 hold(s) started, 2 extension(s); latest hold end 18:50 site-local (2026-10-17T22:50:00+00:00).\nUnresolved crew reports (real crew reports, not simulated): 1.\n- wildlife: Alligator seen near the north culvert. (reported 2026-10-17T22:02:00+00:00)\n\nExperimental model index\nExperimental model index: unavailable (no saved prediction for the target date).\n\nMissing data\nMissing: forecast.\nMissing: official alerts.\nMissing: model index.",
+    "delivered_at": "2026-10-17T23:20:00+00:00",
+    "delivered_local_time": "2026-10-17T19:20:00-04:00",
+    "delivery_local_date": "2026-10-17",
+    "event_mode": "replay",
+    "forecast_target_date": "2026-10-18",
+    "generator": "template-v1",
+    "id": "7de41ed6-a444-4511-a20d-5008599a6d9e",
+    "label": "simulated replay",
+    "missing_inputs": [
+      "forecast",
+      "official alerts",
+      "model index"
+    ],
+    "note": "Generated from supplied facts only. Forecasts, official alerts, crew reports and the experimental model index are different kinds of evidence. Missing inputs are listed, not filled in.",
+    "rewrite_status": "not_requested",
+    "rewritten_text": null,
+    "scheduled_local_time": "18:00",
+    "sections": [
+      {
+        "available": false,
+        "evidence_type": "forecast",
+        "key": "forecast",
+        "lines": [
+          "Forecast unavailable: no stored next-day forecast for this site. No forecast values are shown."
+        ],
+        "title": "Tomorrow's forecast"
+      },
+      {
+        "...": "today_evidence, model, missing_data sections (see fixture)"
+      }
+    ],
+    "site_id": 663,
+    "site_name": "Deerhaven Generating Station",
+    "timezone": "America/New_York",
+    "trigger": "manual"
+  },
+  "created": true
+}
+```
+
+### Evidence timeline
+
+`GET /api/sites/{id}/timeline?event_mode=live|replay` - chronological (oldest first) events for one site, derived from canonical records so it agrees with the Outlook:
+- `lightning_hold_started` / `lightning_hold_extended`: rows in `ops_events`, each with `ref_table: "lightning_events"` and `ref_key` = that strike's `(source, event_mode, event_id)`.
+- `lightning_hold_expired`: computed from those events and the current `lightning_holds.hold_until` (`ref_table: "lightning_holds"`); it ends only the lightning hold.
+- `report_created` / `report_resolved`: read from `crew_reports` (`ref_table: "crew_reports"`, `ref_key: {"id"}`).
+- `briefing_delivered`: read from `briefings` (`ref_table: "briefings"`, `ref_key: {"id"}`).
+
+Each event has `id, site_id, type, occurred_at, source, event_mode, summary, ref_table, ref_key, details`. A live query returns live records only. A replay query returns replay records plus live crew-report events, which keep `event_mode: "live"`. Replay records never appear in live queries. Live reports use the wall clock; replay events use the replay clock, which starts at the session's wall-clock start and runs faster.
+
+Replay example (`ops_timeline.json` -> `examples.replay`):
+```json
+{
+  "as_of": "2026-10-17T23:20:00+00:00",
+  "count": 8,
+  "event_mode": "replay",
+  "events": [
+    {
+      "details": {
+        "distance_km": 14.48,
+        "distance_miles": 9.0,
+        "hold_until": "2026-10-17T22:30:00+00:00",
+        "lightning_hold": {
+          "event_mode": "replay",
+          "site_id": 663
+        },
+        "previous_hold_until": null
+      },
+      "event_mode": "replay",
+      "id": "replay:simulated-replay:dh-001:663",
+      "occurred_at": "2026-10-17T22:00:00+00:00",
+      "ref_key": {
+        "event_id": "dh-001",
+        "event_mode": "replay",
+        "source": "simulated-replay"
+      },
+      "ref_table": "lightning_events",
+      "site_id": 663,
+      "source": "simulated-replay",
+      "summary": "Simulated replay: Strike 9.0 mi from site started a 30-minute lightning stop-work hold.",
+      "type": "lightning_hold_started"
+    },
+    {
+      "details": {
+        "category": "wildlife",
+        "has_photo": true,
+        "report_id": "b5de736f-e56d-46e0-be9d-dc59d5bc8190"
+      },
+      "event_mode": "live",
+      "id": "live:report:b5de736f-e56d-46e0-be9d-dc59d5bc8190:created",
+      "occurred_at": "2026-10-17T22:02:00+00:00",
+      "ref_key": {
+        "id": "b5de736f-e56d-46e0-be9d-dc59d5bc8190"
+      },
+      "ref_table": "crew_reports",
+      "site_id": 663,
+      "source": "crew_report",
+      "summary": "Crew report (wildlife) with photo: Alligator seen near the north culvert.",
+      "type": "report_created"
+    },
+    {
+      "details": {
+        "category": "access",
+        "has_photo": true,
+        "report_id": "cf9c5b30-1067-411c-b03f-65c04c16b8a7"
+      },
+      "event_mode": "live",
+      "id": "live:report:cf9c5b30-1067-411c-b03f-65c04c16b8a7:created",
+      "occurred_at": "2026-10-17T22:03:00+00:00",
+      "ref_key": {
+        "id": "cf9c5b30-1067-411c-b03f-65c04c16b8a7"
+      },
+      "ref_table": "crew_reports",
+      "site_id": 663,
+      "source": "crew_report",
+      "summary": "Crew report (access) with photo: Access road rutted at gate 2.",
+      "type": "report_created"
+    },
+    {
+      "details": {
+        "category": "access",
+        "has_photo": true,
+        "report_id": "cf9c5b30-1067-411c-b03f-65c04c16b8a7"
+      },
+      "event_mode": "live",
+      "id": "live:report:cf9c5b30-1067-411c-b03f-65c04c16b8a7:resolved",
+      "occurred_at": "2026-10-17T22:04:00+00:00",
+      "ref_key": {
+        "id": "cf9c5b30-1067-411c-b03f-65c04c16b8a7"
+      },
+      "ref_table": "crew_reports",
+      "site_id": 663,
+      "source": "crew_report",
+      "summary": "Crew report (access) marked resolved; it stays in site history.",
+      "type": "report_resolved"
+    },
+    {
+      "details": {
+        "distance_km": 8.05,
+        "distance_miles": 5.0,
+        "hold_until": "2026-10-17T22:40:00+00:00",
+        "lightning_hold": {
+          "event_mode": "replay",
+          "site_id": 663
+        },
+        "previous_hold_until": "2026-10-17T22:30:00+00:00"
+      },
+      "event_mode": "replay",
+      "id": "replay:simulated-replay:dh-003:663",
+      "occurred_at": "2026-10-17T22:10:00+00:00",
+      "ref_key": {
+        "event_id": "dh-003",
+        "event_mode": "replay",
+        "source": "simulated-replay"
+      },
+      "ref_table": "lightning_events",
+      "site_id": 663,
+      "source": "simulated-replay",
+      "summary": "Simulated replay: Strike 5.0 mi from site extended the lightning stop-work hold.",
+      "type": "lightning_hold_extended"
+    },
+    {
+      "details": {
+        "distance_km": 3.22,
+        "distance_miles": 2.0,
+        "hold_until": "2026-10-17T22:50:00+00:00",
+        "lightning_hold": {
+          "event_mode": "replay",
+          "site_id": 663
+        },
+        "previous_hold_until": "2026-10-17T22:40:00+00:00"
+      },
+      "event_mode": "replay",
+      "id": "replay:simulated-replay:demo-manual-001:663",
+      "occurred_at": "2026-10-17T22:20:00+00:00",
+      "ref_key": {
+        "event_id": "demo-manual-001",
+        "event_mode": "replay",
+        "source": "simulated-replay"
+      },
+      "ref_table": "lightning_events",
+      "site_id": 663,
+      "source": "simulated-replay",
+      "summary": "Simulated replay: Strike 2.0 mi from site extended the lightning stop-work hold.",
+      "type": "lightning_hold_extended"
+    },
+    {
+      "details": {
+        "clears_only": "lightning_hold",
+        "hold_until": "2026-10-17T22:50:00+00:00"
+      },
+      "event_mode": "replay",
+      "id": "replay:hold-expired:663:2026-10-17T22:50:00+00:00",
+      "occurred_at": "2026-10-17T22:50:00+00:00",
+      "ref_key": {
+        "event_mode": "replay",
+        "site_id": 663
+      },
+      "ref_table": "lightning_holds",
+      "site_id": 663,
+      "source": "planit-control (computed from hold_until)",
+      "summary": "Simulated replay: Lightning hold countdown ended. Only the lightning hold is lifted; other hazards and lightning feed coverage are unchanged.",
+      "type": "lightning_hold_expired"
+    },
+    {
+      "details": {
+        "briefing_id": "7de41ed6-a444-4511-a20d-5008599a6d9e",
+        "delivery_local_date": "2026-10-17",
+        "forecast_target_date": "2026-10-18",
+        "missing_inputs": [
+          "forecast",
+          "official alerts",
+          "model index"
+        ],
+        "trigger": "manual"
+      },
+      "event_mode": "replay",
+      "id": "replay:briefing:7de41ed6-a444-4511-a20d-5008599a6d9e",
+      "occurred_at": "2026-10-17T23:20:00+00:00",
+      "ref_key": {
+        "id": "7de41ed6-a444-4511-a20d-5008599a6d9e"
+      },
+      "ref_table": "briefings",
+      "site_id": 663,
+      "source": "planit-control briefing generator",
+      "summary": "Simulated replay: Next-day briefing delivered for 2026-10-18 (forecast target date).",
+      "type": "briefing_delivered"
+    }
+  ],
+  "includes": [
+    "simulated replay events",
+    "live crew reports (event_mode \"live\")"
+  ],
+  "label": "simulated replay",
+  "note": null,
+  "site_id": 663
+}
+```
+
+Empty state (`examples.empty`):
+```json
+{
+  "as_of": "2026-10-17T22:08:00+00:00",
+  "count": 0,
+  "event_mode": "live",
+  "events": [],
+  "includes": [
+    "live events only"
+  ],
+  "label": null,
+  "note": "No operational events recorded for this site. This does not mean there is no hazard.",
+  "site_id": 6051
+}
+```
+
+Error bodies (`ops_errors.json`):
+```json
+{
+  "invalid_input_400": {
+    "status": 400,
+    "body": {
+      "code": "invalid_input",
+      "error": "event_mode must be live or replay"
+    }
+  },
+  "not_found_404": {
+    "status": 404,
+    "body": {
+      "code": "not_found",
+      "error": "Site not found"
+    }
+  },
+  "live_briefing_not_due_409": {
+    "status": 409,
+    "body": {
+      "code": "not_due",
+      "error": "Live briefings for this site are delivered at 6 PM America/Chicago time; it is 17:30 there. Use event_mode \"replay\" to demonstrate."
+    }
+  },
+  "photo_too_large_413": {
+    "status": 413,
+    "body": {
+      "code": "photo_too_large",
+      "error": "photo must be 5 MiB or smaller"
+    }
+  },
+  "database_unavailable_503": {
+    "status": 503,
+    "body": {
+      "error": "DATABASE_URL is not configured. Add your Tiger Data URI to .env.",
+      "code": "database_unavailable"
+    }
+  }
+}
+```

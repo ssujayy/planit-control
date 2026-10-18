@@ -358,3 +358,94 @@ def next_day_predictions(*, now, mode):
             (event_mode(mode), timestamp(now))).fetchall()
     return {row['site_id']: row for row in rows}
 
+
+
+# ---------------------------------------------------------------------------
+# Workstream B (operational events) additions. A's functions above are unchanged.
+# Tables: lightning_feed_status, replay_sessions, ops_events (migration 003), plus
+# row-level reads/updates on A's crew_reports, briefings, lightning_events and
+# lightning_holds. No schema changes here.
+# ---------------------------------------------------------------------------
+
+def ops_record_feed(*, mode, source, received_at=None, checked_at=None):
+    with connection() as conn:
+        conn.execute('''INSERT INTO lightning_feed_status (event_mode, source, last_event_received_at, last_feed_check_at)
+            VALUES (%s, %s, %s, %s) ON CONFLICT (event_mode, source) DO UPDATE SET
+            last_event_received_at = GREATEST(lightning_feed_status.last_event_received_at, EXCLUDED.last_event_received_at),
+            last_feed_check_at = GREATEST(lightning_feed_status.last_feed_check_at, EXCLUDED.last_feed_check_at)''',
+            (event_mode(mode), text(source, 200), received_at, checked_at))
+
+
+def ops_get_feeds(*, mode):
+    with connection() as conn:
+        return conn.execute('''SELECT event_mode, source, last_event_received_at, last_feed_check_at
+            FROM lightning_feed_status WHERE event_mode = %s''', (event_mode(mode),)).fetchall()
+
+
+def ops_start_replay_session(*, session_id, started_at, replay_epoch, speed):
+    with connection() as conn:
+        conn.execute('UPDATE replay_sessions SET active = false WHERE active')
+        conn.execute('''INSERT INTO replay_sessions (session_id, started_at, replay_epoch, speed, active)
+            VALUES (%s, %s, %s, %s, true)''', (session_id, started_at, replay_epoch, speed))
+
+
+def ops_get_replay_session():
+    with connection() as conn:
+        return conn.execute('''SELECT session_id, started_at, replay_epoch, speed, active FROM replay_sessions
+            WHERE active ORDER BY started_at DESC LIMIT 1''').fetchone()
+
+
+def ops_reset_replay():
+    """Deletes event_mode = 'replay' rows only. Live rows and lightning_strikes are never touched."""
+    with connection() as conn:
+        for table in ('ops_events', 'lightning_feed_status', 'lightning_holds', 'lightning_events', 'briefings', 'crew_reports'):
+            conn.execute(f"DELETE FROM {table} WHERE event_mode = 'replay'")
+        conn.execute('UPDATE replay_sessions SET active = false WHERE active')
+
+
+def ops_add_event(*, event_id, site_id, mode, type, occurred_at, source, summary, ref_table, ref_key, details):
+    with connection() as conn:
+        row = conn.execute('''INSERT INTO ops_events
+            (id, site_id, event_mode, type, occurred_at, source, summary, ref_table, ref_key, details)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT (id) DO NOTHING RETURNING id''',
+            (event_id, site_id, event_mode(mode), type, timestamp(occurred_at), source, summary,
+             ref_table, Jsonb(ref_key), Jsonb(details))).fetchone()
+    return row is not None
+
+
+def ops_list_events(*, site_id, mode):
+    with connection() as conn:
+        return conn.execute('''SELECT id, site_id, event_mode, type, occurred_at, source, summary, ref_table, ref_key, details
+            FROM ops_events WHERE site_id = %s AND event_mode = %s ORDER BY occurred_at, id''',
+            (site_id, event_mode(mode))).fetchall()
+
+
+def ops_get_crew_report(report_id):
+    try:
+        key = uuid.UUID(str(report_id))
+    except ValueError:
+        return None
+    with connection() as conn:
+        row = conn.execute('''SELECT id, site_id, event_mode, observed_at, created_at, latitude, longitude,
+                category, note, photo_content_type, resolved_at FROM crew_reports WHERE id = %s''', (key,)).fetchone()
+    return {**row, 'id': str(row['id'])} if row else None
+
+
+def ops_resolve_crew_report(report_id, *, resolved_at):
+    """Sets resolved_at once; the report stays in history."""
+    try:
+        key = uuid.UUID(str(report_id))
+    except ValueError:
+        return None
+    with connection() as conn:
+        conn.execute('UPDATE crew_reports SET resolved_at = %s WHERE id = %s AND resolved_at IS NULL',
+                     (timestamp(resolved_at), key))
+    return ops_get_crew_report(report_id)
+
+
+def ops_get_briefing(*, site_id, delivery_local_date, mode):
+    with connection() as conn:
+        row = conn.execute('''SELECT id, site_id, delivery_local_date, target_date, generated_at, body, facts
+            FROM briefings WHERE site_id = %s AND event_mode = %s AND delivery_local_date = %s''',
+            (site_id, event_mode(mode), delivery_local_date)).fetchone()
+    return {**row, 'id': str(row['id'])} if row else None

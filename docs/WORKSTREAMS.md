@@ -6,10 +6,10 @@ Record actual coordination only in each owner's own docs/coordination log.
 
 | Owner | Files and responsibility | Next acceptance check |
 |---|---|---|
-| A Backend integration | backend/db.py, migrations, shared routes, seed, ingestion and worker registration | 55 database-backed plants, cached weather/NWS monitoring, evidence ranking and shared B/C repositories; see docs/BACKEND_HANDOFF.md |
-| B Alerts and crew workflow | Lightning, reports and briefing behavior; register jobs with A's worker | Persistent isolated lightning processing, shared photo reports and site-local 18:00 briefings |
-| C ML | Historical data, training, evaluation and inference; register jobs with A's worker | Verified historical dataset, saved model/evaluation and actual predictions |
-| D Frontend | frontend/src; Shift Outlook state, components, styling and visualization; preserve map | Attention queue, site-by-time matrix and selected-site evidence timeline with honest missing states |
+| A Backend integration | backend/db.py, backend/schema.sql and migrations, shared routes and backend wiring, seed, ingestion, the single worker and worker registration | 55 database-backed plants, cached weather/NWS monitoring, evidence ranking and shared B/C repositories (see docs/BACKEND_HANDOFF.md); new tables applied to Tiger Data; the worker runs B's briefing function and stays single |
+| B Operational events (alerts and crew workflow) | backend/lightning.py, reports.py, briefings.py and their routes, docs/replay/, behavior tests; register jobs with A's worker | Persistent isolated lightning holds, cross-device photo reports, one briefing per site/date/mode at site-local 18:00 |
+| C ML | ml/ folder; historical data, NOAA/weather joins, training, model, evaluation and inference; register jobs with A's worker | Verified historical dataset, saved model/evaluation and actual predictions, stored and shown with the extrapolation label |
+| D Frontend | frontend/src; Shift Outlook (attention queue, site-by-time matrix, evidence timeline) state, components, styling and visualization; map (preserve), report form, briefing inbox | Views run on contract fixtures first, then real endpoints, with honest missing states |
 
 ## What is already scaffolded
 

@@ -1,0 +1,17 @@
+{
+  "fixture": true,
+  "http_status": 201,
+  "active": true,
+  "delivered_strikes": 1,
+  "label": "simulated replay",
+  "note": "Simulated replay. Replay timestamps come from the replay clock and are not real observations.",
+  "replay_elapsed_seconds": 0,
+  "replay_now": "2026-10-17T22:00:00+00:00",
+  "scripted_strikes": 9,
+  "session": {
+    "replay_epoch": "2026-10-17T22:00:00+00:00",
+    "session_id": "61caec5d845d",
+    "speed": 10.0,
+    "started_at": "2026-10-17T22:00:00+00:00"
+  }
+}

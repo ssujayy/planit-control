@@ -106,6 +106,7 @@ def create_app():
         except RuntimeError as error:
             return jsonify({'error': str(error), 'code': 'weather_unavailable'}), 502
 
+    from .ops_routes import ops_bp; app.register_blueprint(ops_bp)  # Workstream B operational events
     @app.get('/')
     @app.get('/<path:path>')
     def frontend(path='index.html'):

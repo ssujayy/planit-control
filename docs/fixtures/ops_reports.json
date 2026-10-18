@@ -1,0 +1,73 @@
+{
+  "fixture": true,
+  "http_status": 200,
+  "as_of": "2026-10-17T22:04:00+00:00",
+  "counts": {
+    "total": 2,
+    "unresolved": 1
+  },
+  "current_unresolved": [
+    {
+      "category": "wildlife",
+      "created_at": "2026-10-17T22:02:00+00:00",
+      "distance_from_site_km": 0.19,
+      "event_mode": "live",
+      "evidence_type": "crew_report",
+      "has_photo": true,
+      "id": "b5de736f-e56d-46e0-be9d-dc59d5bc8190",
+      "latitude": 29.7601,
+      "location_flag": null,
+      "longitude": -82.3861,
+      "note": "Alligator seen near the north culvert.",
+      "observed_at": "2026-10-17T22:02:00+00:00",
+      "photo_content_type": "image/png",
+      "photo_url": "/api/reports/b5de736f-e56d-46e0-be9d-dc59d5bc8190/photo",
+      "resolved_at": null,
+      "site_id": 663,
+      "status": "unresolved"
+    }
+  ],
+  "event_mode": "live",
+  "history": [
+    {
+      "category": "access",
+      "created_at": "2026-10-17T22:03:00+00:00",
+      "distance_from_site_km": 0.19,
+      "event_mode": "live",
+      "evidence_type": "crew_report",
+      "has_photo": true,
+      "id": "cf9c5b30-1067-411c-b03f-65c04c16b8a7",
+      "latitude": 29.7601,
+      "location_flag": null,
+      "longitude": -82.3861,
+      "note": "Access road rutted at gate 2.",
+      "observed_at": "2026-10-17T22:03:00+00:00",
+      "photo_content_type": "image/png",
+      "photo_url": "/api/reports/cf9c5b30-1067-411c-b03f-65c04c16b8a7/photo",
+      "resolved_at": "2026-10-17T22:04:00+00:00",
+      "site_id": 663,
+      "status": "resolved"
+    },
+    {
+      "category": "wildlife",
+      "created_at": "2026-10-17T22:02:00+00:00",
+      "distance_from_site_km": 0.19,
+      "event_mode": "live",
+      "evidence_type": "crew_report",
+      "has_photo": true,
+      "id": "b5de736f-e56d-46e0-be9d-dc59d5bc8190",
+      "latitude": 29.7601,
+      "location_flag": null,
+      "longitude": -82.3861,
+      "note": "Alligator seen near the north culvert.",
+      "observed_at": "2026-10-17T22:02:00+00:00",
+      "photo_content_type": "image/png",
+      "photo_url": "/api/reports/b5de736f-e56d-46e0-be9d-dc59d5bc8190/photo",
+      "resolved_at": null,
+      "site_id": 663,
+      "status": "unresolved"
+    }
+  ],
+  "note": "Crew reports are field observations from people on site. \"No recent reports\" does not mean no hazard.",
+  "site_id": 663
+}

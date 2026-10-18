@@ -1,0 +1,25 @@
+{
+  "fixture": true,
+  "http_status": 200,
+  "accepted": true,
+  "affected_sites": [
+    {
+      "distance_km": 3.22,
+      "distance_miles": 2.0,
+      "effect": "extended",
+      "hold_until": "2026-10-17T22:50:00+00:00",
+      "site_id": 663,
+      "site_name": "Deerhaven Generating Station"
+    }
+  ],
+  "duplicate": false,
+  "event_mode": "replay",
+  "label": "simulated replay",
+  "strike": {
+    "event_id": "demo-manual-001",
+    "latitude": 29.7592,
+    "longitude": -82.35446,
+    "occurred_at": "2026-10-17T22:20:00+00:00",
+    "source": "simulated-replay"
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "fixture": true,
+  "http_status": 200,
+  "as_of": "2026-10-17T22:20:00+00:00",
+  "clock": "replay",
+  "coverage": {
+    "feed_connected": true,
+    "last_event_received_at": "2026-10-17T22:20:00+00:00",
+    "last_feed_check_at": "2026-10-17T22:20:00+00:00",
+    "note": "Simulated replay. Not real lightning data.",
+    "source": "simulated replay script",
+    "status": "COMPLETE"
+  },
+  "event_mode": "replay",
+  "hazard": {
+    "hold_active": true,
+    "hold_until": "2026-10-17T22:40:00+00:00",
+    "last_strike": {
+      "occurred_at": "2026-10-17T22:10:00+00:00",
+      "source": "simulated-replay"
+    },
+    "seconds_remaining": 1200,
+    "site_id": 663,
+    "site_name": "Deerhaven Generating Station",
+    "state": "STOP_WORK",
+    "state_reason": "Lightning strike within 10 miles in the last 30 minutes.",
+    "type": "lightning"
+  },
+  "hold_minutes": 30,
+  "label": "simulated replay",
+  "note": "Lightning hold status covers only lightning. When the countdown ends, only the lightning hold is lifted; other hazards and feed coverage are unchanged.",
+  "radius_miles": 10,
+  "site_id": 663
+}
