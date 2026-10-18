@@ -1,5 +1,35 @@
 # Foundation API contract
 
+## Readable dashboard and lightning recording (October 18, 2026)
+
+- Model scores retain their saved numeric values. All dashboard and briefing
+  displays use two decimals; today and tomorrow remain separate daily forecasts.
+- `POST /api/sites/<id>/lightning/observations` accepts a JSON object with
+  `observed: true` and a required unique `event_id` (reuse it when retrying).
+  It records a crew observation **at the selected plant now**, using server UTC,
+  fixed source `crew-observed` and fixed `event_mode: live`. Provider/source,
+  coordinates, event time and event-mode overrides are rejected. This starts or
+  extends the persisted 30-minute hold at all plants within 10 miles. The response
+  is the existing strike-processing result; duplicates return 200, new records
+  201. It does not connect or certify automatic strike monitoring. Existing
+  `/api/lightning/strikes` remains replay-only over HTTP.
+- `GET /api/sites/<id>/lightning/observations?event_mode=live|replay` returns
+  `site_id`, `event_mode`, `as_of`, `count` and `events`: the site's persisted
+  hold-start/extension history, newest first, with the existing operational-event
+  shape (source, occurred_at, summary, details and canonical event reference).
+  Expired holds remain in history. This is hold history, not a complete strike feed.
+- `GET /api/sites/<id>/briefing-preview` is a read-only equivalent of the existing
+  POST preview: `preview: true`, `delivered: false`, `briefing`. The UI loads it
+  automatically; it never reserves a scheduled delivery or writes a briefing.
+- Newly generated preview/scheduled briefings add `generated_at` and `display`
+  in existing JSON facts (no schema change). `display` contains `target_date`,
+  `based_on` (forecast retrieval time), `summary`, `conditions` (key, label,
+  value, unit, status), `attention` (plain text list), `missing_data` (list), and
+  `model` (nullable score, outside_training_counties, outside_training_range).
+  Missing, stale or wrong-date forecasts have null display values and explicit
+  status. Legacy `sections`/`body_text` remain available. The same deterministic
+  generator supplies previews and duplicate-free site-local 18:00 delivery.
+
 ## Compliance integration changes (October 18, 2026)
 
 ### Weather/model follow-up fixes

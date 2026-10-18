@@ -1,5 +1,26 @@
 # Supervisor dashboard handoff
 
+## Current integration - October 18, 2026
+
+The default dashboard now uses plain labels, two-decimal today/tomorrow model
+indices, crew lightning recording/history and an automatically generated
+tomorrow-report display. Preview GET and observation GET/POST routes are
+documented in API_CONTRACT.md. Shared tables/dependencies are unchanged.
+The small Debug button exposes metadata, contributors, full report text, detailed
+coverage and storage selection. Its preference survives reload; critical missing
+feeds and stale conditions stay visible with Debug off. Lightning observations
+require confirmation at the selected plant now and persist holds within 10 miles;
+they do not connect an automatic strike feed. Previews do not count as delivery.
+
+Latest verification: 199 Python/database checks passed, one skipped; 17 frontend
+checks and build passed; HTTP-fixture and actual-database browser checks passed
+on desktop/mobile, including score/API equality and report auto-load. All 55
+sites have actual saved today/tomorrow predictions at verification. One worker
+is active; scheduled persistence/deduplication is tested, but actual wall-clock
+18:00 delivery is not yet observed. See SETUP_STATUS.md for remaining gaps.
+
+## Archived foundation-only handoff (superseded above)
+
 The frontend consumes the existing API contract; no backend, database schema,
 dependencies, or shared response shapes were changed.
 

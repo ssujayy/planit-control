@@ -61,7 +61,8 @@ def parse_strike(payload):
 
 def _hold_event(strike, site_id, effect, distance_km, previous, new):
     miles = distance_km / KM_PER_MILE
-    prefix = 'Simulated replay: ' if strike['event_mode'] == 'replay' else ''
+    prefix = ('Simulated replay: ' if strike['event_mode'] == 'replay' else
+              'Crew-recorded lightning: ' if strike['source'] == 'crew-observed' else '')
     if effect == 'started':
         summary = f'{prefix}Strike {miles:.1f} mi from site started a {HOLD_MINUTES}-minute lightning stop-work hold.'
     else:
