@@ -7,7 +7,8 @@ Use the README setup. This is a prototype; provider/data gaps remain visible.
    nullable prediction status/probability/geography; 005 adds stream context.
    Never edit already-applied migrations. Start Flask and exactly one worker.
 2. Open the dashboard in Tiger Data storage. Confirm 55 sites. Select the first
-   ranked site; inspect official warnings, weather units/valid/retrieval times,
+   ranked site; inspect official warnings and today/tomorrow model scores.
+   Toggle the small Debug button for weather units/valid/retrieval times,
    coverage and tomorrow's experimental index. Holds and official warnings
    outrank the numeric score. No recorded alert is not a safety clearance.
 3. Inspect flood evidence: official NWS products stay distinct from the
@@ -20,13 +21,17 @@ Use the README setup. This is a prototype; provider/data gaps remain visible.
    filters. Restart Flask and verify the same report/photo still exists. These
    cross-device/restart steps require the configured database; they have not
    been demonstrated against Tiger Data by this branch's author.
-5. Open tomorrow's briefing preview before 6 PM. It is labeled not delivered and
+5. Tomorrow's report appears automatically; inspect its forecast cards and
+   summary without pressing a preview button. It is labeled not delivered and
    does not reserve the scheduled record. At/after 18:00 site-local, the worker
    writes an inbox record. Restart/repeat the job; the same site/local date
    must have one delivery. Eastern and Central sites deliver at different UTC
    times. Do not claim that a preview is scheduled delivery.
 6. Demonstrate deterministic lightning with the isolated replay APIs below.
    Replay is not a live strike feed and never changes the live dashboard rank.
+   For an actual crew sighting at the plant, check the observation confirmation
+   in its Lightning hold card and select Record lightning. Verify the countdown
+   and recorded hold history. Do not record invented sightings as real evidence.
 
 PowerShell replay commands (with configured database and Flask running):
 
@@ -45,7 +50,7 @@ The HTTP strike endpoint rejects attempts to inject live events. A real provider
 must implement the `StrikeSource` protocol and use `poll_source` in the existing
 worker, with a verified actual payload, licensing and reconnect/checkpoint rules.
 
-Without database credentials, select file inventory to inspect the 55 real
+Without database credentials, enable Debug and select file inventory to inspect the 55 real
 locations with explicitly unavailable monitoring. Use `python -m
 scripts.verify_providers` for a bounded actual-provider/model check, and
 `node tests/dashboard.browser.mjs` in frontend for isolated UI fixtures.

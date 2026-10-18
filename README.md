@@ -20,6 +20,24 @@ callbacks compute both immediately after storing the site's forecast; manual
 refresh also updates them. The model uses entire local-day features and cannot
 produce an instantaneous score from current readings.
 
+Scores display two decimals consistently, so small saved results such as 0.06
+and 0.09 no longer both appear as 0.1. The small **Debug** button reveals model
+metadata, source/freshness details, full briefing text and the storage selector.
+The default view uses simpler labels and keeps missing monitoring visible.
+
+The lightning card lets crews confirm a real observation **at the selected
+plant just now** and choose **Record lightning**. This saves the observation,
+starts/extends 30-minute holds within 10 miles and retains hold history across
+restarts. Reuse the request ID for retries. This is crew recording; automatic
+strike detection still requires a verified provider. Use isolated replay for
+demonstrations rather than entering invented observations into the live inbox.
+
+**Tomorrow’s report** appears automatically with the latest stored next-day
+forecast, today's alerts/reports/lightning activity, missing data and model
+index. Its preview updates throughout the day without saving a delivery. The
+single worker saves the same generated display at 6 PM in each plant's local
+timezone, once per site/day. Delivery records remain in the inbox.
+
 Tomorrow's rainfall prefers the complete provider DAILY value for the exact
 local date/timezone and mm units, independently of hourly coverage. The legacy
 hourly fallback follows preceding-hour intervals. Heat/soil still require all

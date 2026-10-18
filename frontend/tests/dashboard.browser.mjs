@@ -32,6 +32,8 @@ let fail = false;
 const reports = [];
 const photo = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jG2QAAAAASUVORK5CYII=', 'base64');
 const requests = [];
+const lightningHistory = [];
+let liveOutlook;
 const server = createServer(async (request, response) => {
   try {
     const url = new URL(request.url, 'http://localhost');
@@ -40,7 +42,9 @@ const server = createServer(async (request, response) => {
       response.setHeader('Content-Type', 'application/json');
       if (live) {
         const upstream = await fetch(live + request.url);
-        response.writeHead(upstream.status); response.end(await upstream.text()); return;
+        const body = await upstream.text();
+        if (url.pathname === '/api/outlook' && upstream.ok) liveOutlook = JSON.parse(body);
+        response.writeHead(upstream.status); response.end(body); return;
       }
       if (url.pathname === '/api/reports' && request.method === 'POST') {
         const chunks = []; for await (const chunk of request) chunks.push(chunk);
@@ -68,8 +72,24 @@ const server = createServer(async (request, response) => {
       }
       if (/^\/api\/reports\/.+\/photo$/.test(url.pathname)) { response.setHeader('Content-Type', 'image/png'); response.end(photo); return; }
       if (url.pathname === '/api/briefings') { response.end(JSON.stringify({ briefings: [], count: 0 })); return; }
-      if (url.pathname === '/api/briefings/preview') { response.end(JSON.stringify({ preview: true, delivered: false,
-        briefing: { body_text: 'TEST FIXTURE preview. No delivery.', forecast_target_date: model.planning_weather.target_date } })); return; }
+      if (/^\/api\/sites\/\d+\/lightning\/observations$/.test(url.pathname)) {
+        const siteId = Number(url.pathname.split('/')[3]);
+        if (request.method === 'POST') {
+          const chunks = []; for await (const chunk of request) chunks.push(chunk);
+          const body = JSON.parse(Buffer.concat(chunks).toString());
+          assert.equal(body.observed, true); assert.ok(body.event_id);
+          lightningHistory.push({ id: body.event_id, site_id: siteId, source: 'crew-observed', occurred_at: new Date().toISOString(), type: 'lightning_hold_extended', summary: 'TEST FIXTURE crew observation' });
+          rows.find(row => row.site.id === siteId).lightning_hold = { ...hold(Date.now() + 1800000), source: 'crew-observed' };
+          response.writeHead(201); response.end(JSON.stringify({ duplicate: false })); return;
+        }
+        const events = lightningHistory.filter(event => event.site_id === siteId);
+        response.end(JSON.stringify({ events, count: events.length })); return;
+      }
+      if (/^\/api\/sites\/\d+\/briefing-preview$/.test(url.pathname)) { response.end(JSON.stringify({ preview: true, delivered: false,
+        briefing: { body_text: 'TEST FIXTURE preview. No delivery.', forecast_target_date: model.planning_weather.target_date,
+          display: { target_date: model.planning_weather.target_date, based_on: new Date().toISOString(), summary: 'Tomorrow: rain expected.',
+            conditions: [{ key: 'precipitation_sum_mm', label: 'Rain expected', value: 29, unit: 'mm', status: 'available' }],
+            attention: [], missing_data: ['lightning feed'], model: { score: .064, outside_training_counties: true, outside_training_range: [] } } } })); return; }
       const demo = url.searchParams.get('mode') === 'demo';
       if (fail && !demo && url.pathname === '/api/outlook') {
         response.writeHead(503); response.end(JSON.stringify({ error: 'TEST FIXTURE database interruption', code: 'database_unavailable' })); return;
@@ -147,12 +167,19 @@ try {
   await command('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1100, deviceScaleFactor: 1, mobile: false });
   await command('Page.navigate', { url: 'http://127.0.0.1:' + server.address().port });
   async function selectInventory() {
+    if (!await evaluate("!!document.querySelector('.mode select')")) await evaluate("document.querySelector('.debug-toggle').click()");
     await waitFor("!!document.querySelector('.mode select')");
     await evaluate("const choice = document.querySelector('.mode select'); choice.value = 'demo'; choice.dispatchEvent(new Event('change', { bubbles: true }));");
   }
   if (inventory) await selectInventory();
   await waitFor("document.querySelectorAll('.sites button').length === " + (live ? 55 : 3), live ? 25000 : 12000);
-  assert.equal(await evaluate("document.querySelector('.mode select').value"), inventory ? 'demo' : 'live');
+  assert.equal(await evaluate("document.querySelector('.debug-toggle').getAttribute('aria-pressed')"), inventory ? 'true' : 'false');
+  if (!inventory) {
+    assert.equal(await evaluate("!!document.querySelector('.mode select') || !!document.querySelector('.integration-panel')"), false);
+    assert.equal(await evaluate("document.body.textContent.includes('Automatic lightning detection is unavailable')"), true);
+    await waitFor("!!document.querySelector('.briefing-display')");
+    assert.equal(requests.some(path => /^\/api\/sites\/\d+\/briefing-preview$/.test(path)), true);
+  }
   assert.equal(await evaluate("!!document.querySelector('.leaflet-marker-icon')"), true);
   assert.equal(await evaluate('document.documentElement.scrollWidth <= innerWidth + 1'), true);
   assert.equal(await evaluate("document.body.innerText.includes('Foundation build') || document.body.innerText.includes('Fetch current weather')"), false);
@@ -168,8 +195,17 @@ try {
       const expectedName = await evaluate(`document.querySelectorAll('.sites button')[${position}].querySelector('.queue-name strong').textContent`);
       await evaluate(`document.querySelectorAll('.sites button')[${position}].click()`);
       await waitFor("document.querySelector('#selected-site-title')?.textContent === " + JSON.stringify(expectedName) + " && !document.querySelector('.today-index').textContent.includes('Unavailable')");
+      const expectedRow = liveOutlook.sites.find(row => row.site.name === expectedName);
+      assert.equal(await evaluate("document.querySelector('.model-score').firstChild.textContent"), expectedRow.prediction.score.toFixed(2), 'Main card must match the actual saved model output.');
       assert.equal(await evaluate("[...document.querySelectorAll('.weather-grid > div')].filter(node => node.querySelector('small')?.textContent.startsWith('Tomorrow')).every(node => !node.querySelector('strong').textContent.includes('Unavailable'))"), true);
     }
+    await waitFor("document.querySelectorAll('#briefings .forecast-facts > div').length === 5");
+    await evaluate("document.querySelector('.debug-toggle').click()");
+    await waitFor("!!document.querySelector('.metadata') && !!document.querySelector('.integration-panel')");
+    await evaluate("document.querySelector('.debug-toggle').click()");
+    await waitFor("!document.querySelector('.metadata') && !document.querySelector('.integration-panel')");
+    await evaluate("document.querySelector('.alert-toast button')?.click(); document.querySelector('#briefings').scrollIntoView({ behavior: 'instant' })");
+    await screenshot('live-tomorrow-report');
     console.log('Live Tiger Data: all 55 today/tomorrow indices, three complete tomorrow metrics, site switching, map, reports and inbox verified.');
   } else {
     await waitFor("!!document.querySelector('#reports form') && !!document.querySelector('#reports .leaflet-marker-icon')");
@@ -184,8 +220,8 @@ try {
     assert.equal(reports.length, 1); assert.equal(reports[0].latitude, rows[0].site.latitude);
     await evaluate("document.querySelector('.history-report button').click()");
     await waitFor("document.querySelector('.history-report')?.textContent.includes('Resolved')");
-    await evaluate("document.querySelector('#briefings button').click()");
     await waitFor("document.querySelector('.briefing-record')?.textContent.includes('not delivered')");
+    assert.equal(await evaluate("document.querySelector('.briefing-display').textContent.includes('0.06 / 10')"), true);
     console.log('Report form submission, map pin, shared history, resolution and unpersisted briefing preview passed with isolated HTTP fixtures.');
     assert.equal(await evaluate("document.querySelector('.sites button strong').textContent"), 'Fixture plant 1');
     const initialCountdown = await evaluate("document.querySelector('.countdown').textContent");
@@ -193,13 +229,23 @@ try {
     await waitFor("document.querySelector('.countdown').textContent !== " + JSON.stringify(initialCountdown));
     assert.equal(await evaluate("document.querySelector('.alert-toast').innerText.includes('Stop work')"), true);
     await evaluate("document.querySelector('.alert-toast button').click()");
+    assert.equal(await evaluate("document.querySelector('.lightning-recording button').disabled"), true);
+    await evaluate("document.querySelector('.confirm-observation input').click(); document.querySelector('.lightning-recording button').click()");
+    await waitFor("document.querySelector('.lightning-recording').textContent.includes('Lightning saved') && document.querySelector('.countdown')?.textContent.startsWith('29:')");
+    assert.equal(lightningHistory.length, 1);
+    await evaluate("document.querySelector('.lightning-history summary').click()");
+    await waitFor("document.querySelector('.lightning-history').textContent.includes('Crew observation')");
     await evaluate("[...document.querySelectorAll('.sites button')].find(button => button.innerText.includes('Fixture plant 2')).click()");
     await waitFor("document.querySelector('#selected-site-title').textContent === 'Fixture plant 2'");
     assert.equal(await evaluate("document.querySelector('.official-alert').innerText.includes('Flood Warning')"), true);
-    assert.equal(await evaluate("[...document.querySelectorAll('.weather-grid > div')].find(node => node.querySelector('small')?.textContent.includes('forecast rainfall')).querySelector('strong').textContent"), '29 mm');
-    assert.equal(await evaluate("[...document.querySelectorAll('.weather-grid > div')].find(node => node.querySelector('small')?.textContent.includes('shallow soil moisture')).querySelector('strong').textContent"), '0.55 m³/m³');
+    assert.equal(await evaluate("[...document.querySelectorAll('.weather-grid > div')].find(node => node.querySelector('small')?.textContent.includes('rain expected')).querySelector('strong').textContent"), '29 mm');
+    assert.equal(await evaluate("[...document.querySelectorAll('.weather-grid > div')].find(node => node.querySelector('small')?.textContent.includes('surface soil moisture')).querySelector('strong').textContent"), '0.55 m³/m³');
     await evaluate("[...document.querySelectorAll('.sites button')].find(button => button.innerText.includes('Fixture plant 3')).click()");
-    await waitFor("document.querySelector('.model-score').textContent.includes('9.0')");
+    await waitFor("document.querySelector('.model-score').textContent.includes('9.00')");
+    await evaluate("document.querySelector('.debug-toggle').click()");
+    await waitFor("!!document.querySelector('.mode select') && !!document.querySelector('.integration-panel')");
+    assert.equal(await evaluate("document.querySelector('.metadata').textContent.includes('TEST-ARTIFACT')"), true);
+    assert.equal(await evaluate("document.querySelector('.today-index').textContent.includes('4.25')"), true);
     assert.equal(await evaluate("[...document.querySelectorAll('.sites button')].find(button => button.innerText.includes('Fixture plant 3')).querySelector('.today-model').textContent.includes('4.25')"), true);
     assert.equal(await evaluate("document.querySelector('.today-index').textContent.includes('4.25')"), true);
     rows[0].lightning_hold = hold(Date.now() + 1800000); rows[2].prediction.score = 0; rows[2].model_index = 0;
@@ -227,10 +273,20 @@ try {
   await command('Page.reload');
   if (inventory) await selectInventory();
   await waitFor("document.querySelectorAll('.sites button').length === " + (live ? 55 : 3), live ? 25000 : 12000);
+  if (!live) {
+    assert.equal(await evaluate("document.querySelector('.debug-toggle').getAttribute('aria-pressed')"), 'true', 'Debug preference survives reload.');
+    await evaluate("document.querySelector('.debug-toggle').click()");
+    await waitFor("!document.querySelector('.integration-panel')");
+  }
   assert.equal(await evaluate('document.documentElement.scrollWidth <= innerWidth + 1'), true, 'Mobile layout overflows horizontally.');
   await screenshot(live ? 'live-mobile' : 'fixture-mobile');
   await evaluate("document.querySelector('#site-details').scrollIntoView({ behavior: 'instant' })");
   await screenshot(live ? 'live-mobile-details' : 'fixture-mobile-details');
+  if (live && !inventory) {
+    await waitFor("!!document.querySelector('#briefings .briefing-display')");
+    await evaluate("document.querySelector('.alert-toast button')?.click(); document.querySelector('#briefings').scrollIntoView({ behavior: 'instant' })");
+    await screenshot('live-mobile-tomorrow-report');
+  }
   if (live) {
     await command('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1100, deviceScaleFactor: 1, mobile: false });
     await screenshot('live-desktop');

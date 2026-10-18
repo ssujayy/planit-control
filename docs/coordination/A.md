@@ -2,6 +2,29 @@
 
 ## Scope and ownership
 
+### October 18, 2026, 3:35 AM ET - model display, crew lightning, tomorrow reports
+
+Human requested four fixes across the integrated dashboard/operational flow.
+Updated API_CONTRACT before adding read-only automatic briefing preview,
+structured generated report fields and crew-observation routes. Reused existing
+lightning/report/briefing storage; no schema/dependency/credential changes.
+Changed backend/briefings.py, lightning.py, ops_routes.py and frontend dashboard,
+workflow, display helpers/styles. No ML model or numeric rescaling changes.
+Updated matching fixture fields without replacing other fixtures' IDs.
+
+199 Python tests passed, one historical-data test skipped; 17 frontend checks,
+build and fixture/live database Chromium checks passed. Rolled-back DB tests
+verified observation persistence across new app instances, deduplication and
+stored scheduled display uniqueness. Real browser main scores matched API values;
+all 55 daily indices and tomorrow metrics were available. Inspected mobile report
+screenshots. Restarted current backend and one leased worker; retired competing
+Flask listeners. No production lightning event was invented, no commit/push.
+
+Handoff: normal UI is simpler; Debug reveals sources/model/full report/coverage.
+Crew recording works, but automatic live strikes still need a verified feed.
+Actual 18:00 delivery remains unobserved; original ML geography artifacts and
+sponsor questions remain open. No other owner's coordination log was edited.
+
 ### October 18, 2026, about 2:40 AM ET — forecast/model follow-up
 
 Human requested missing current/tomorrow indices and next-day heat/soil/rainfall

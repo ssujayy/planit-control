@@ -10,9 +10,10 @@ from zoneinfo import ZoneInfo
 from .lightning import LiveSource, coverage
 from .ops_common import iso, mode_label, parse_iso, utc_now
 from .reports import report_view
+from .planning_weather import daily_value, numeric
 
 DELIVERY_TIME = time(18, 0)
-GENERATOR = 'template-v1'
+GENERATOR = 'template-v2'
 HOLD_TYPES = ('lightning_hold_started', 'lightning_hold_extended')
 FORECAST_LABELS = {
     'temperature_2m_max': 'Maximum air temperature',
@@ -140,7 +141,7 @@ def _model_section(inputs, target, missing):
         reason = model.get('reason') or model.get('note') or 'no reason given'
         return {'key': 'model', 'title': title, 'evidence_type': 'experimental_model_index', 'available': False,
                 'lines': [f'Experimental model index: unavailable ({reason}).']}
-    lines = [f"Experimental model index (0-10; not a probability or calibrated risk): {float(model['model_index']):.1f} "
+    lines = [f"Experimental model index (0-10; not a probability or calibrated risk): {float(model['model_index']):.2f} "
              f"for {model.get('target_date')}.",
              'Daily model output for the whole local day, not an hourly forecast. It does not override official alerts.']
     if model.get('target_date') != target:
@@ -154,6 +155,47 @@ def _model_section(inputs, target, missing):
     lines.append(f"Model version {model.get('model_version') or 'unknown'}.")
     lines.append('Historical observed-weather evaluation does not establish next-day forecast performance.')
     return {'key': 'model', 'title': title, 'evidence_type': 'experimental_model_index', 'available': True, 'lines': lines}
+
+
+def _display(inputs, target, missing):
+    """Plain-language report from the same supplied facts; no invented measurements."""
+    forecast = inputs.get('forecast') or {}
+    status = ('unavailable' if forecast.get('valid_date') != target else
+              'stale' if forecast.get('stale') else 'available')
+    labels = {'temperature_2m_max': 'Highest temperature', 'heat_index_max_f': 'Feels like in heat (calculated)',
+              'precipitation_sum_mm': 'Rain expected', 'wind_gusts_10m_max': 'Strongest wind gusts',
+              'soil_moisture_max_m3_m3': 'Surface soil moisture (forecast)'}
+    conditions = []
+    for key, label in labels.items():
+        entry = (forecast.get('values') or {}).get(key) or {}
+        value = entry.get('value') if status == 'available' else None
+        valid = numeric(value)
+        conditions.append({'key': key, 'label': label, 'value': value if valid else None,
+                           'unit': entry.get('unit'), 'status': status if valid or status != 'available' else 'unavailable'})
+    phrases = [f"{c['label']}: {c['value']} {c['unit'] or ''}" for c in conditions[:4] if c['value'] is not None]
+    summary = '. '.join(phrases) + '.' if phrases else 'Tomorrow’s forecast is not currently available.'
+    if status == 'stale':
+        summary = 'Tomorrow’s forecast needs an update. Older values are available in Debug.'
+    attention = [a.get('event') or 'Official weather alert' for a in inputs.get('active_alerts') or []]
+    reports = inputs.get('unresolved_reports') or []
+    attention.extend(f"Crew report: {r['category']} — {r.get('note') or 'Review report'}" for r in reports)
+    advisory = inputs.get('flood_advisory') or {}
+    if advisory.get('active'):
+        attention.append('Rain and a nearby stream may affect access. Review the rainfall advisory.')
+    # Holds recorded earlier today may already have expired; do not describe them as active.
+    if inputs.get('lightning_today'):
+        attention.append('Lightning was recorded today. Check the current hold timer before work.')
+    for period in forecast.get('hazardous_periods') or []:
+        if status == 'available':
+            attention.append(f"{period['local_time']}: {', '.join(period['signals'])} (forecast planning signal).")
+    model = inputs.get('model') or {}
+    score = model.get('model_index')
+    valid_model = numeric(score) and 0 <= score <= 10 and model.get('target_date') == target and not model.get('reason')
+    return {'target_date': target, 'based_on': forecast.get('retrieved_at'), 'summary': summary,
+            'conditions': conditions, 'attention': attention, 'missing_data': list(dict.fromkeys(missing)),
+            'model': {'score': score if valid_model else None,
+                      'outside_training_counties': model.get('outside_training_counties'),
+                      'outside_training_range': model.get('outside_training_range') or []}}
 
 
 def generate_briefing(site, delivery_local_date, inputs, event_mode, now, trigger='scheduled', rewriter=None):
@@ -186,6 +228,7 @@ def generate_briefing(site, delivery_local_date, inputs, event_mode, now, trigge
         'forecast_target_date': target, 'delivered_at': iso(now) if trigger != 'preview' else None,
         'delivered_local_time': site_local(site, now).isoformat() if trigger != 'preview' else None,
         'generator': GENERATOR, 'rewrite_status': status, 'sections': sections, 'missing_inputs': missing,
+        'generated_at': iso(now), 'display': _display(inputs, target, missing),
         'body_text': body, 'rewritten_text': rewritten, 'note': NOTE,
     }
 
@@ -207,10 +250,13 @@ def _outlook_facts(row):
     facts = {'unavailable_layers': row.get('unavailable_layers'), 'flood_advisory': row.get('flood_advisory')}
     planning, weather = row.get('planning_weather') or {}, row.get('weather') or {}
     if weather:
+        values = {key: {'value': planning.get(key), 'unit': unit} for key, unit in PLANNING_UNITS.items()}
+        for name, unit in [('temperature_2m_max', '°C'), ('wind_gusts_10m_max', 'km/h')]:
+            values[name] = {'value': daily_value(weather, row['site'], planning.get('target_date'), name, unit), 'unit': unit}
         facts['forecast'] = {
             'source': planning.get('source'), 'valid_date': planning.get('target_date'), 'retrieved_at': weather.get('fetched_at'),
             'stale': weather.get('stale', False), 'hazardous_periods': planning.get('hazardous_periods'),
-            'values': {key: {'value': planning.get(key), 'unit': unit} for key, unit in PLANNING_UNITS.items()}}
+            'values': values}
     monitoring = (row.get('official_alerts_monitoring') or {}).get('state')
     if monitoring in ('COMPLETE', 'STALE') and row.get('alerts') is not None:
         facts['active_alerts'] = [{'event': a.get('event'), 'source': 'NWS', 'expires': a.get('expires')} for a in row['alerts']]
@@ -218,7 +264,7 @@ def _outlook_facts(row):
     prediction = row.get('prediction')
     if prediction:
         provenance = prediction.get('provenance') or {}
-        facts['model'] = {'model_index': prediction.get('score'), 'target_date': prediction.get('valid_date'),
+        facts['model'] = {'model_index': prediction.get('score') if not prediction.get('stale') and prediction.get('status') != 'unavailable' else None, 'target_date': prediction.get('valid_date'),
                           'model_version': prediction.get('model_version'),
                           'outside_training_range': prediction.get('outside_training_range') or provenance.get('outside_training_range') or [],
                           'outside_training_counties': prediction.get('outside_training_counties', provenance.get('outside_training_counties')),

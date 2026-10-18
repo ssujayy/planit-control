@@ -1,10 +1,21 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { activeAlerts, activeHold, attentionReasons, briefingWindow, countdown, coverageState, feedState, hazardState, predictionFor, predictionReason, rankRows } from '../src/outlook.js';
+import { activeAlerts, activeHold, attentionReasons, briefingWindow, countdown, coverageState, feedState, formatScore, hazardState, monitoringSummary, predictionFor, predictionReason, rankRows } from '../src/outlook.js';
 import { floodAlert, siteRow } from './fixtures.mjs';
 
 const now = Date.parse('2026-10-17T21:59:50Z');
 const hold = expiration => ({ hold_until: new Date(expiration).toISOString(), last_strike_at: new Date(expiration - 1800000).toISOString(), source: 'TEST FIXTURE' });
+
+test('different small model scores remain distinguishable and unavailable is never zero', () => {
+  assert.deepEqual([.064, .094, .146, 1.25, 0, 10].map(formatScore), ['0.06', '0.09', '0.15', '1.25', '0.00', '10.00']);
+  for (const value of [null, undefined, NaN, -1, 11]) assert.equal(formatScore(value), 'Unavailable');
+});
+
+test('plain-language monitoring keeps missing lightning visible', () => {
+  const row = siteRow(1, now);
+  assert.match(monitoringSummary(row, now), /lightning unavailable/);
+  assert.match(monitoringSummary(row, now, true), /weather needs an update/);
+});
 
 test('an active hold stays STOP_WORK even with unavailable feeds', () => {
   const row = siteRow(1, now, { lightning_hold: hold(now + 1800000), weather: null, weather_monitoring: { state: 'UNAVAILABLE' }, official_alerts_monitoring: { state: 'UNAVAILABLE' } });

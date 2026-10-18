@@ -45,6 +45,37 @@ def test_migrations_and_seed_are_repeatable(isolated_database):
     assert {site['source_plant_id'] for site in sites} == {site['source_plant_id'] for site in db.demo_sites()}
 
 
+def test_crew_lightning_route_persists_across_app_instances(isolated_database, monkeypatch):
+    from backend.app import create_app
+    from backend.ops_store import PostgresStore
+    from backend.briefings import run_due_briefings
+    db.migrate()
+    db.seed_sites()
+    now = datetime(2026, 10, 17, 22, tzinfo=timezone.utc)
+    monkeypatch.setattr('backend.app.load_dotenv', lambda *a, **kw: None)
+    app = create_app()
+    app.config.update(OPS_CLOCK=lambda: now, OPS_OUTLOOK=lambda at: None)
+    client = app.test_client()
+    path = '/api/sites/663/lightning/observations'
+    assert client.post(path, json={'observed': True, 'event_id': 'isolated-observation'}).status_code == 201
+    assert client.post(path, json={'observed': True, 'event_id': 'isolated-observation'}).status_code == 200
+    restarted = create_app()
+    restarted.config.update(OPS_CLOCK=lambda: now, OPS_OUTLOOK=lambda at: None)
+    history = restarted.test_client().get(path).get_json()
+    assert history['count'] == 1 and history['events'][0]['source'] == 'crew-observed'
+    assert PostgresStore().get_hold(663, 'live')['hold_until'] == now + timedelta(minutes=30)
+    assert PostgresStore().get_hold(663, 'replay') is None
+    # The same scheduled function saves the new display once, including today's observation.
+    store = PostgresStore()
+    plant = store.get_site(663)
+    assert run_due_briefings(now, store, sites=[plant])[0]['created'] is True
+    assert run_due_briefings(now, store, sites=[plant]) == []
+    record = PostgresStore().list_briefings(663, 'live')[0]
+    assert record['display']['target_date'] == '2026-10-18'
+    assert 'Lightning was recorded today.' in ' '.join(record['display']['attention'])
+    assert record['generated_at'] == now.isoformat()
+
+
 def test_applied_migration_changes_are_rejected(isolated_database):
     db.migrate()
     isolated_database.execute("UPDATE schema_migrations SET checksum = 'changed'")

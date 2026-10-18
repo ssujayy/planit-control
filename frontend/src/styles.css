@@ -509,4 +509,25 @@ footer {
 .history-report > div { min-width: 0; overflow-wrap: anywhere; }
 .briefing-record { margin-top: 18px; border-top: 1px solid #dae2da; padding-top: 12px; }
 .briefing-record summary { cursor: pointer; line-height: 1.5; }
+.debug-toggle { padding: 6px 10px; background: #f5f8f7; border: 1px solid #b8cbc4; color: #29483f; border-radius: 6px; font-size: 12px; }
+.debug-toggle[aria-pressed="true"] { background: #d9eee5; border-color: #126b59; }
+.evidence-card { font-size: 14px; line-height: 1.6; }
+.queue-reason, .sites button small, .feed-line, .index-label, .sites button .index-label strong { font-size: 12px; }
+.weather-grid small { font-size: 12px; }
+.weather-grid strong { font-size: 20px; }
+.source-line, .integration-note, summary, .map-note { font-size: 12px; }
+.lightning-recording { margin-top: 20px; border-top: 1px solid #dce5e5; padding-top: 16px; }
+.confirm-observation { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
+.confirm-observation input { margin-top: 6px; flex-shrink: 0; }
+.lightning-history { margin-top: 16px; }
+.lightning-history p { border-top: 1px solid #e2eaea; padding-top: 10px; }
+.forecast-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.forecast-facts > div { background: #f3f7f5; padding: 12px; border-radius: 6px; }
+.forecast-facts dt { font-size: 12px; color: #536d77; }
+.forecast-facts dd { margin: 6px 0 0; font-size: 18px; font-weight: 600; overflow-wrap: anywhere; }
+.briefing-display ul { padding-left: 20px; }
+.briefing-display li { margin-bottom: 8px; }
+.briefing-summary { font-weight: 600; }
+.briefing-display h4 { margin-bottom: 6px; }
+@media (max-width: 480px) { header nav { flex-wrap: wrap; } .forecast-facts { gap: 8px; } .forecast-facts dd { font-size: 16px; } }
 button:disabled { opacity: .55; cursor: wait; }

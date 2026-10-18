@@ -1,5 +1,22 @@
 # Challenge requirements audit
 
+## Latest dashboard follow-up - October 18, 2026, about 3:35 AM ET
+
+Two-decimal scores now match saved API values throughout the dashboard and new
+reports. Crew lightning recording persists real manual observations and hold
+history with deduplication and replay isolation; automatic detection still needs
+a verified feed. Tomorrow's structured report auto-loads from stored evidence
+and uses the same deterministic generator as site-local 18:00 delivery. Default
+copy is simpler; the small Debug toggle exposes technical details. All critical
+missing/stale states and model limitations remain visible.
+
+199 Python tests passed with rolled-back database checks; one historical-data
+test skipped. 17 frontend checks and build passed. Fixture/real-database Chromium
+checks passed, including main-score/API equality, report auto-load, recording,
+Debug, all 55 daily scores and desktop/mobile layout. No real lightning sighting
+was fabricated; actual clock-time 18:00 delivery remains unobserved. Current
+status in SETUP_STATUS.md supersedes the historical findings below.
+
 ## Follow-up verification: October 18, 2026, about 2:40 AM ET
 
 This supersedes the initial database blockers below. The human authorized

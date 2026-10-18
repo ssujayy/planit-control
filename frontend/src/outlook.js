@@ -36,6 +36,31 @@ export function formatDate(value) {
   }).format(new Date(`${value}T12:00:00Z`));
 }
 
+export function formatScore(value) {
+  return Number.isFinite(value) && value >= 0 && value <= 10 ? value.toFixed(2) : 'Unavailable';
+}
+
+export function siteSummary(row, now) {
+  if (activeHold(row, now)) return 'Lightning recorded nearby. Stop work until the timer ends.';
+  const alerts = activeAlerts(row, now);
+  if (alerts.length) return alerts.map(alert => alert.event).join(' · ');
+  if (row.unresolved_reports?.length) return `${row.unresolved_reports.length} crew reports need review.`;
+  if (row.flood_advisory?.active) return 'Rain and a nearby stream may affect site access.';
+  if (feedState(row, 'official', now) !== 'COMPLETE') return 'Weather warnings need an update.';
+  return 'No active official alerts in the available reports.';
+}
+
+export function monitoringSummary(row, now, disconnected = false) {
+  const gaps = [];
+  if (feedState(row, 'weather', now, disconnected) !== 'COMPLETE') gaps.push('weather needs an update');
+  if (feedState(row, 'official', now, disconnected) !== 'COMPLETE') gaps.push('warnings need an update');
+  if (row.unavailable_layers?.includes('lightning')) gaps.push('automatic lightning unavailable');
+  if ((row.unavailable_layers ?? []).some(layer => /fire/i.test(layer))) gaps.push('fire detection unavailable');
+  const other = (row.unavailable_layers ?? []).filter(layer => !/lightning|fire|weather|official|model|prediction/i.test(layer));
+  if (other.length) gaps.push('other monitoring missing');
+  return gaps.length ? gaps.join(' · ') : 'Configured checks are up to date';
+}
+
 export function activeHold(row, now) {
   const hold = row.lightning_hold;
   return hold && Date.parse(hold.hold_until) > now ? hold : null;

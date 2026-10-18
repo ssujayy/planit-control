@@ -107,6 +107,33 @@ def too_large(error):
 
 # Lightning
 
+@ops_bp.route('/api/sites/<int:site_id>/lightning/observations', methods=['GET', 'POST'])
+@with_store
+def lightning_observations(store, site_id):
+    site = store.get_site(site_id)
+    if not site:
+        return _not_found('Site')
+    if request.method == 'GET':
+        event_mode = _event_mode()
+        now, _ = _clock_for(store, event_mode)
+        events = [e for e in store.list_events(site_id, event_mode)
+                  if e['type'] in ('lightning_hold_started', 'lightning_hold_extended')]
+        return jsonify({'site_id': site_id, 'event_mode': event_mode, 'as_of': iso(now),
+                        'count': len(events), 'events': list(reversed(events))})
+    body = request.get_json(silent=True)
+    if request.args:
+        raise ValidationError('Crew observations do not accept query overrides. Use the replay strike endpoint for simulations.')
+    if not isinstance(body, dict) or body.get('observed') is not True:
+        raise ValidationError('Confirm that you observed lightning at this plant just now.')
+    if set(body) - {'observed', 'event_id'}:
+        raise ValidationError('Crew observations use the selected plant, server time and crew-observed source; overrides are not allowed.')
+    now = _now()
+    strike = parse_strike({'event_id': body.get('event_id'), 'source': 'crew-observed',
+                           'event_mode': 'live', 'occurred_at': iso(now),
+                           'latitude': site['latitude'], 'longitude': site['longitude']})
+    result = process_strike(store, strike, store.list_sites(), now)
+    return jsonify(result), 200 if result['duplicate'] else 201
+
 @ops_bp.get('/api/sites/<int:site_id>/lightning')
 @with_store
 def site_lightning(store, site_id):
@@ -224,11 +251,8 @@ def resolve(store, report_id):
 
 # Briefings
 
-@ops_bp.post('/api/briefings/preview')
-@with_store
-def preview_briefing(store):
-    body = request.get_json(silent=True) or {}
-    site = store.get_site(_site_id(body.get('site_id')))
+def _preview(store, site_id):
+    site = store.get_site(site_id)
     if not site:
         return _not_found('Site')
     now = _now()
@@ -236,6 +260,18 @@ def preview_briefing(store):
     inputs = store_inputs_provider(store, _live_source(), outlook=_outlook())(site, delivery, 'live', now)
     briefing = generate_briefing(site, delivery, inputs, 'live', now, trigger='preview')
     return jsonify({'preview': True, 'delivered': False, 'briefing': briefing})
+
+
+@ops_bp.get('/api/sites/<int:site_id>/briefing-preview')
+@with_store
+def automatic_preview(store, site_id):
+    return _preview(store, site_id)
+
+@ops_bp.post('/api/briefings/preview')
+@with_store
+def preview_briefing(store):
+    body = request.get_json(silent=True) or {}
+    return _preview(store, _site_id(body.get('site_id')))
 
 @ops_bp.get('/api/briefings')
 @with_store

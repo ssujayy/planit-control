@@ -1,5 +1,46 @@
 # Setup status
 
+## Readable dashboard, lightning recording and reports - October 18, 2026, 3:35 AM ET
+
+- Fixed the main model card's one-decimal rounding. Cards, queue, map and newly
+  generated briefings now show the saved daily score to two decimals, including
+  genuine zero. Today and tomorrow remain separate; no model or score rescaling.
+- Added crew lightning recording at the selected plant with explicit observation
+  confirmation. Fixed source/server time, retry deduplication, 10-mile processing,
+  persisted 30-minute holds/extensions and retained hold history use the existing
+  database tables. Manual observations remain labeled crew evidence. Replay and
+  provider impersonation are rejected; automatic monitoring stays unavailable.
+- Tomorrow's report loads automatically and refreshes from stored information.
+  It shows a generated summary, next-day temperature/derived heat/rain/gusts/soil,
+  official warnings, today's lightning activity, unresolved crew reports, missing
+  information and the experimental score. The same template supplies the one
+  scheduled report per site/date at 18:00 local. Previews never write or reserve
+  delivery; legacy delivered records remain readable. No migration needed.
+- Simplified default labels, removed infrastructure/provenance comments from
+  normal view, increased reading sizes, and added a small persistent **Debug**
+  button. Debug shows model metadata/contributors, sources, freshness details,
+  full generated report, coverage and the file-inventory selector. Missing feeds,
+  stale conditions, official instructions and model limitations remain visible.
+- `python -m pytest -q -p no:cacheprovider --run-database`: **199 passed, 1 skipped**
+  (ignored historical experiment data). The cache override avoids Windows cache
+  permissions. **17 Node checks passed**; frontend production build passed.
+  Chromium fixture flows verified recording, history, report auto-load, Debug
+  persistence, alerts/polling and mobile layout. Real database browser checks
+  verified all 55 today/tomorrow scores, main-card/API equality, site switching,
+  complete tomorrow metrics, automatic report cards, Debug, map and mobile layout.
+  Desktop/mobile report screenshots were inspected. Production lightning records
+  were not fabricated: persistence tests used isolated PostgreSQL schemas and
+  rolled back, while browser recording used labeled synthetic HTTP fixtures.
+- Current app remains http://localhost:5173 and http://localhost:5000. Replaced
+  two competing Flask instances with one current backend and restarted the one
+  leased worker. No dependency/schema/credential changes, commit, push or deploy.
+
+Remaining: automatic lightning detection requires a verified strike data feed
+and adapter; manual recording does not satisfy that live integration. Actual
+wall-clock 18:00 delivery has not yet been observed (timezone/DST, persistence
+and duplicate prevention are tested). Sponsor and ML geography questions below
+remain open. No blocker remains for the four requested local UI/workflow fixes.
+
 ## Forecast/model fixes — October 18, 2026, about 2:40 AM ET
 
 This supersedes the earlier missing-DATABASE_URL and unapplied-migration notes.

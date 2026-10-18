@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { getJson } from './api';
-import { formatDate, formatTime } from './outlook';
+import { formatDate, formatScore, formatTime } from './outlook';
 
 const categories = ['wildlife', 'heat', 'lightning', 'flooding', 'mud', 'fire', 'other', 'water', 'access'];
 
@@ -65,7 +65,7 @@ function ReportMap({ site, pin, onPin, reports }) {
   return <div className="report-map" ref={element} aria-label="Hazard location map. Click or drag the plus pin; coordinates can also be edited below."/>;
 }
 
-export function CrewReports({ site, enabled, onChanged }) {
+export function CrewReports({ site, enabled, onChanged, debug }) {
   const [revision, setRevision] = useState(0), [status, setStatus] = useState(''), [category, setCategory] = useState(''), [query, setQuery] = useState('');
   const [pin, setPin] = useState({ latitude: site.latitude, longitude: site.longitude });
   const [busy, setBusy] = useState(false), [message, setMessage] = useState(''), [actionError, setActionError] = useState('');
@@ -96,8 +96,8 @@ export function CrewReports({ site, enabled, onChanged }) {
     finally { setBusy(false); }
   }
   return <section className="panel evidence-card" id="reports" aria-labelledby="reports-title">
-    <div className="panel-title"><h3 id="reports-title">Crew hazard reports & location history</h3><span>Refreshes every 15 seconds</span></div>
-    <p className="muted">Crew-reported sightings and local conditions. No recent reports does not mean no hazard. Resolved reports remain in history.</p>
+    <div className="panel-title"><h3 id="reports-title">Report a site hazard</h3>{debug && <span>Refreshes every 15 seconds</span>}</div>
+    <p>Share a photo and location with the crew.</p>
     {!enabled ? <p className="integration-note">Select Tiger Data storage to submit and read shared reports. File inventory has no report storage.</p> : <>
       <ReportMap site={site} pin={pin} onPin={setPin} reports={reports}/>
       <form className="report-form" onSubmit={submit}>
@@ -117,7 +117,7 @@ export function CrewReports({ site, enabled, onChanged }) {
       {data && !reports.length && <p>No reports match this history view.</p>}
       {reports.map(report => <article className="report history-report" key={report.id}>
         <div><strong>{report.category} · {report.status === 'unresolved' ? 'Active' : 'Resolved'}</strong><p>{report.note}</p>
-          <small>{formatTime(report.observed_at, site.timezone)} · {report.latitude.toFixed(5)}, {report.longitude.toFixed(5)} · Crew report</small>
+          <small>{formatTime(report.observed_at, site.timezone)}{debug && ` · ${report.latitude.toFixed(5)}, ${report.longitude.toFixed(5)} · Crew report`}</small>
           {report.location_flag && <p className="integration-note">Pin is over 5 km from the inventory site. Verify its location.</p>}
           {report.status === 'unresolved' && <p><button className="text-button" disabled={busy} onClick={() => resolve(report.id)}>Mark resolved</button></p>}</div>
         <a href={report.photo_url} target="_blank" rel="noreferrer"><img src={report.photo_url} loading="lazy" alt={`Crew photo: ${report.category}`}/></a>
@@ -127,24 +127,64 @@ export function CrewReports({ site, enabled, onChanged }) {
   </section>;
 }
 
-export function BriefingInbox({ site, enabled }) {
-  const [preview, setPreview] = useState(null), [busy, setBusy] = useState(false), [actionError, setActionError] = useState('');
-  const { data, error } = useSiteData(`/api/briefings?site_id=${site.id}&event_mode=live`, enabled, 0);
-  async function showPreview() {
-    setBusy(true); setActionError('');
-    try { setPreview((await postJson('/api/briefings/preview', { site_id: site.id })).briefing); }
-    catch (error) { setActionError(error.message); }
+export function LightningRecording({ site, enabled, debug, onChanged }) {
+  const [confirmed, setConfirmed] = useState(false), [revision, setRevision] = useState(0);
+  const [busy, setBusy] = useState(false), [actionError, setActionError] = useState(''), [message, setMessage] = useState('');
+  const attempt = useRef(null);
+  const path = `/api/sites/${site.id}/lightning/observations`;
+  const { data, error } = useSiteData(path + '?event_mode=live', enabled, revision);
+  async function record() {
+    setBusy(true); setActionError(''); setMessage('');
+    attempt.current ??= crypto.randomUUID();
+    try {
+      await postJson(path, { observed: true, event_id: attempt.current });
+      attempt.current = null; setConfirmed(false); setRevision(value => value + 1); onChanged?.();
+      setMessage('Lightning saved. A 30-minute hold applies at sites within 10 miles.');
+    } catch (error) { setActionError(error.message); }
     finally { setBusy(false); }
   }
+  return <div className="lightning-recording">
+    {enabled ? <><label className="confirm-observation"><input type="checkbox" checked={confirmed} onChange={event => setConfirmed(event.target.checked)}/>I saw lightning at {site.name} just now</label>
+      <button type="button" className="primary" disabled={!confirmed || busy} onClick={record}>{busy ? 'Saving…' : 'Record lightning'}</button>
+      <details className="lightning-history"><summary>Recorded lightning holds ({data?.count ?? '…'})</summary>
+        {data?.events.map(event => <p key={event.id}><strong>{formatTime(event.occurred_at, site.timezone)}</strong><br/>{event.source === 'crew-observed' ? 'Crew observation' : event.source} · {event.type.endsWith('extended') ? 'Hold extended' : 'Hold started'}{debug && <span><br/>{event.summary}</span>}</p>)}
+        {data?.count === 0 && <p>No lightning holds recorded. Automatic detection is unavailable.</p>}
+      </details></> : <p>Recording requires a database connection.</p>}
+    {message && <p role="status">{message}</p>}{(error || actionError) && <p className="error" role="alert">{actionError || error}</p>}
+  </div>;
+}
+
+function BriefingDisplay({ briefing, site, debug }) {
+  const display = briefing.display;
+  if (!display) return <p className="alert-copy">{briefing.body_text}</p>;
+  return <div className="briefing-display">
+    <p className="briefing-summary">{display.summary}</p>
+    <dl className="forecast-facts">{display.conditions.map(item => <div key={item.key}><dt>{item.label}</dt><dd>{Number.isFinite(item.value) ? `${item.value} ${item.unit ?? ''}` : item.status === 'stale' ? 'Needs update' : 'Unavailable'}</dd></div>)}</dl>
+    <p>Experimental model index: <strong>{formatScore(display.model?.score)}{Number.isFinite(display.model?.score) && ' / 10'}</strong></p>
+    {Number.isFinite(display.model?.score) && <p className="muted">{display.model.outside_training_counties === true ? 'Outside training counties. ' : display.model.outside_training_counties == null ? 'Training location coverage unknown. ' : ''}{display.model.outside_training_range?.length > 0 && `Inputs outside training range: ${display.model.outside_training_range.join(', ')}. `}Tested on past weather; next-day forecast accuracy is unverified.</p>}
+    {display.attention.length > 0 && <><h4>What needs attention</h4><ul>{display.attention.map((line, index) => <li key={index}>{line}</li>)}</ul></>}
+    {display.missing_data.length > 0 && <p className="integration-note">Some information is missing: {display.missing_data.map(value => ({ 'lightning feed': 'automatic lightning detection', model: 'model score', 'model index': 'model score', fire_detections: 'fire detection' }[value] ?? value.replaceAll('_', ' '))).join(', ')}.</p>}
+    <p>Review official warnings, current lightning holds and crew reports before assigning work.</p>
+    <p className="muted">Based on the forecast available {formatTime(display.based_on, site.timezone)}.</p>
+    {debug && <details><summary>Report details and model limitations</summary><p className="alert-copy">{briefing.body_text}</p><p>Generated {formatTime(briefing.generated_at, site.timezone)} · {briefing.generator}</p></details>}
+  </div>;
+}
+
+export function BriefingInbox({ site, enabled, debug }) {
+  const [revision, setRevision] = useState(0);
+  const previewState = useSiteData(`/api/sites/${site.id}/briefing-preview`, enabled, revision);
+  const preview = previewState.data?.briefing;
+  const { data, error } = useSiteData(`/api/briefings?site_id=${site.id}&event_mode=live`, enabled, 0);
   return <article className="panel evidence-card" id="briefings">
-    <h3>Daily briefing inbox</h3><p className="briefing-time">6:00 PM <span>{site.timezone}</span></p>
-    <p>Delivered here for the next local day. The background worker must be running. Previews do not count as delivery.</p>
+    <div className="card-heading"><h3>Tomorrow’s report</h3><span className="badge">6 PM local</span></div>
+    <p>Updates automatically with today’s latest information. Saved to this inbox at 6 PM local time.</p>
     {!enabled ? <p className="integration-note">Shared briefings require Tiger Data storage.</p> : <>
-      <button type="button" className="text-button" disabled={busy} onClick={showPreview}>Preview tomorrow’s briefing</button>
-      {preview && <details open className="briefing-record"><summary>Preview · not delivered · target {formatDate(preview.forecast_target_date)}</summary><p className="alert-copy">{preview.body_text}</p></details>}
-      {data?.briefings.map(briefing => <details className="briefing-record" key={briefing.id}><summary>Delivered {formatTime(briefing.delivered_at, site.timezone)} · for {formatDate(briefing.forecast_target_date)}</summary><p className="alert-copy">{briefing.body_text}</p></details>)}
-      {data && !data.briefings.length && <p>No delivered briefing is recorded for this site.</p>}
-      {(error || actionError) && <p className="error" role="alert">{actionError || error}</p>}
+      <button type="button" className="text-button" onClick={() => setRevision(value => value + 1)}>Refresh report</button>
+      {previewState.loading && <p role="status">Preparing tomorrow’s report…</p>}
+      {preview && <div className="briefing-record"><h4>Forecast for {formatDate(preview.forecast_target_date)}</h4><span className="muted">Preview · not delivered</span><BriefingDisplay briefing={preview} site={site} debug={debug}/></div>}
+      {data?.briefings.map(briefing => <details className="briefing-record" key={briefing.id}><summary>Delivered {formatTime(briefing.delivered_at, site.timezone)} · for {formatDate(briefing.forecast_target_date)}</summary><BriefingDisplay briefing={briefing} site={site} debug={debug}/></details>)}
+      {data && !data.briefings.length && <p className="muted">No saved 6 PM reports yet.</p>}
+      {(error || previewState.error) && <p className="error" role="alert">{previewState.error || error}{preview && ' · Showing the last report received; it may be out of date.'}</p>}
     </>}
   </article>;
 }
