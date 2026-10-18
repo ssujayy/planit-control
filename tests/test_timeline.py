@@ -1,3 +1,4 @@
+import io
 import json
 
 import pytest
@@ -29,11 +30,11 @@ def test_expiry_is_derived_per_hold_episode():
     add_strike(store, 'c', 5, '2026-10-17T19:00:00+00:00')  # after the first hold ended
     during = site_timeline(store, DEERHAVEN, 'live', at('2026-10-17T19:10:00+00:00'))
     assert types(during) == ['lightning_hold_started', 'lightning_hold_extended', 'lightning_hold_expired', 'lightning_hold_started']
-    assert during['events'][2]['occurred_at'] == '2026-10-17T18:40:00Z'
+    assert during['events'][2]['occurred_at'] == '2026-10-17T18:40:00+00:00'
     after = site_timeline(store, DEERHAVEN, 'live', at('2026-10-17T19:31:00+00:00'))
     assert types(after)[-1] == 'lightning_hold_expired'
     assert 'Only the lightning hold is lifted' in after['events'][-1]['summary']
-    assert all(e['occurred_at'].endswith('Z') for e in after['events'])
+    assert all(e['occurred_at'].endswith('+00:00') for e in after['events'])
 
 
 def test_live_never_shows_replay_and_replay_shows_live_reports(monkeypatch):
@@ -42,7 +43,8 @@ def test_live_never_shows_replay_and_replay_shows_live_reports(monkeypatch):
     client = make_client(monkeypatch, store, clock)
     client.post('/api/replay/sessions', json={'speed': 10})
     client.post('/api/reports', content_type='multipart/form-data',
-                data={'site_id': '663', 'latitude': '29.76', 'longitude': '-82.39', 'category': 'heat', 'note': 'Hot'})
+                data={'site_id': '663', 'latitude': '29.76', 'longitude': '-82.39', 'category': 'other', 'note': 'Hot',
+                      'photo': (io.BytesIO(b'\xff\xd8\xff\xe0' + b'\x00' * 16), 'p.jpg')})
     clock.set('2026-10-17T22:02:00+00:00')
     replay = client.get('/api/sites/663/timeline?event_mode=replay').json
     live = client.get('/api/sites/663/timeline').json

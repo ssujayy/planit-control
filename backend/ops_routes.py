@@ -4,20 +4,29 @@ No SQL here; persistence goes through the OpsStore. app.config['OPS_STORE'] and
 app.config['OPS_CLOCK'] may be injected (tests); otherwise the shared PostgresStore
 and the server clock are used. A missing database returns 503 via the app handler.
 """
+import logging
 from functools import wraps
 
-from flask import Blueprint, current_app, jsonify, request
+from flask import Blueprint, current_app, request
+from flask import jsonify as flask_jsonify
 from werkzeug.exceptions import RequestEntityTooLarge
 
 from . import replay
 from .briefings import deliver_briefing, due_date, site_local, store_inputs_provider
 from .lightning import HOLD_MINUTES, RADIUS_MILES, STATUS_NOTE, LiveSource, coverage, hold_view, lightning_status, parse_strike, process_strike
 from .ops_common import REPLAY_LABEL, ValidationError, iso, mode_label, parse_event_mode, utc_now
+from .db import DatabaseUnavailable
 from .ops_store import PostgresStore
+from .outlook import build_outlook, serialize
 from .reports import PHOTO_LIMIT, PhotoTooLarge, create_report, resolve_report, site_history
 from .timeline import site_timeline
 
 ops_bp = Blueprint('ops', __name__)
+log = logging.getLogger(__name__)
+
+
+def jsonify(payload):
+    return flask_jsonify(serialize(payload))
 
 
 def _store():
@@ -30,6 +39,11 @@ def _store():
 def _now():
     clock = current_app.config.get('OPS_CLOCK')
     return clock() if clock else utc_now()
+
+
+def _outlook():
+    """A's stored-evidence Outlook for briefing facts; tests inject OPS_OUTLOOK."""
+    return current_app.config.get('OPS_OUTLOOK', lambda now: build_outlook('live', now=now))
 
 
 def _live_source():
@@ -76,9 +90,19 @@ def invalid_input(error):
     return jsonify({'error': str(error), 'code': 'invalid_input'}), 400
 
 
+@ops_bp.errorhandler(DatabaseUnavailable)
+def database_unavailable(error):
+    # Log the underlying driver error type/SQLSTATE/primary message only (never the connection string).
+    cause = error.__cause__ or error.__context__
+    diag = getattr(cause, 'diag', None)
+    log.error('Operational events store failure: %s; cause=%s sqlstate=%s detail=%s', error, type(cause).__name__ if cause else None,
+              getattr(cause, 'sqlstate', None), getattr(diag, 'message_primary', None))
+    return jsonify({'error': str(error), 'code': 'database_unavailable'}), 503
+
+
 @ops_bp.errorhandler(RequestEntityTooLarge)
 def too_large(error):
-    return jsonify({'error': 'photo must be 5 MB or smaller', 'code': 'photo_too_large'}), 413
+    return jsonify({'error': 'photo must be 5 MiB or smaller', 'code': 'photo_too_large'}), 413
 
 
 # Lightning
@@ -172,10 +196,10 @@ def post_report(store):
 @ops_bp.get('/api/reports')
 @with_store
 def list_reports(store):
-    site_id = _site_id(request.args.get('site_id'))
-    if not store.get_site(site_id):
+    site = store.get_site(_site_id(request.args.get('site_id')))
+    if not site:
         return _not_found('Site')
-    return jsonify(site_history(store, site_id, _now()))
+    return jsonify(site_history(store, site, _now()))
 
 
 @ops_bp.get('/api/reports/<report_id>/photo')
@@ -230,7 +254,7 @@ def generate_briefing_now(store):
                             'code': 'not_due'}), 409
     else:
         delivery = site_local(site, now).date()
-    inputs = store_inputs_provider(store, _live_source(), session)(site, delivery, event_mode, now)
+    inputs = store_inputs_provider(store, _live_source(), session, _outlook())(site, delivery, event_mode, now)
     briefing, created = deliver_briefing(store, site, delivery, inputs, event_mode, now, trigger='manual')
     return jsonify({'created': created, 'briefing': briefing}), 201 if created else 200
 

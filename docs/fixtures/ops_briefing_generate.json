@@ -2,14 +2,14 @@
   "fixture": true,
   "http_status": 201,
   "briefing": {
-    "body_text": "SIMULATED REPLAY. Next-day briefing for Deerhaven Generating Station (America/New_York). Delivery date 2026-10-17 at 6:00 PM site-local time; forecast target date 2026-10-18.\n\nTomorrow's forecast\nForecast unavailable: no stored next-day forecast for this site. No forecast values are shown.\n\nToday's evidence\nOfficial alerts: not yet integrated. The absence of alerts here is not evidence that no warnings exist.\nLightning holds today: 1 hold(s) started, 2 extension(s); latest hold end 18:50 site-local (2026-10-17T22:50:00Z).\nUnresolved crew reports (real crew reports, not simulated): 1.\n- wildlife: Alligator seen near the north culvert. (reported 2026-10-17T22:02:00Z)\n\nExperimental model index\nExperimental model index: not yet integrated.\n\nMissing data\nMissing: forecast.\nMissing: official alerts.\nMissing: model index.",
-    "delivered_at": "2026-10-17T23:20:00Z",
+    "body_text": "SIMULATED REPLAY. Next-day briefing for Deerhaven Generating Station (America/New_York). Delivery date 2026-10-17 at 6:00 PM site-local time; forecast target date 2026-10-18.\n\nTomorrow's forecast\nForecast unavailable: no stored next-day forecast for this site. No forecast values are shown.\n\nToday's evidence\nOfficial alerts: unavailable. The absence of alerts here is not evidence that no warnings exist.\nLightning holds today: 1 hold(s) started, 2 extension(s); latest hold end 18:50 site-local (2026-10-17T22:50:00+00:00).\nUnresolved crew reports (real crew reports, not simulated): 1.\n- wildlife: Alligator seen near the north culvert. (reported 2026-10-17T22:02:00+00:00)\n\nExperimental model index\nExperimental model index: unavailable (no saved prediction for the target date).\n\nMissing data\nMissing: forecast.\nMissing: official alerts.\nMissing: model index.",
+    "delivered_at": "2026-10-17T23:20:00+00:00",
     "delivered_local_time": "2026-10-17T19:20:00-04:00",
     "delivery_local_date": "2026-10-17",
     "event_mode": "replay",
     "forecast_target_date": "2026-10-18",
     "generator": "template-v1",
-    "id": "replay:663:2026-10-17",
+    "id": "7de41ed6-a444-4511-a20d-5008599a6d9e",
     "label": "simulated replay",
     "missing_inputs": [
       "forecast",
@@ -35,10 +35,10 @@
         "evidence_type": "today_evidence",
         "key": "today_evidence",
         "lines": [
-          "Official alerts: not yet integrated. The absence of alerts here is not evidence that no warnings exist.",
-          "Lightning holds today: 1 hold(s) started, 2 extension(s); latest hold end 18:50 site-local (2026-10-17T22:50:00Z).",
+          "Official alerts: unavailable. The absence of alerts here is not evidence that no warnings exist.",
+          "Lightning holds today: 1 hold(s) started, 2 extension(s); latest hold end 18:50 site-local (2026-10-17T22:50:00+00:00).",
           "Unresolved crew reports (real crew reports, not simulated): 1.",
-          "- wildlife: Alligator seen near the north culvert. (reported 2026-10-17T22:02:00Z)"
+          "- wildlife: Alligator seen near the north culvert. (reported 2026-10-17T22:02:00+00:00)"
         ],
         "title": "Today's evidence"
       },
@@ -47,7 +47,7 @@
         "evidence_type": "experimental_model_index",
         "key": "model",
         "lines": [
-          "Experimental model index: not yet integrated."
+          "Experimental model index: unavailable (no saved prediction for the target date)."
         ],
         "title": "Experimental model index"
       },

@@ -1,11 +1,12 @@
 {
   "fixture": true,
   "http_status": 200,
-  "as_of": "2026-10-17T22:20:00Z",
+  "as_of": "2026-10-17T22:20:00+00:00",
   "clock": "replay",
   "coverage": {
-    "last_event_received_at": "2026-10-17T22:20:00Z",
-    "last_feed_check_at": "2026-10-17T22:20:00Z",
+    "feed_connected": true,
+    "last_event_received_at": "2026-10-17T22:20:00+00:00",
+    "last_feed_check_at": "2026-10-17T22:20:00+00:00",
     "note": "Simulated replay. Not real lightning data.",
     "source": "simulated replay script",
     "status": "COMPLETE"
@@ -13,12 +14,9 @@
   "event_mode": "replay",
   "hazard": {
     "hold_active": true,
-    "hold_until": "2026-10-17T22:40:00Z",
-    "last_qualifying_strike": {
-      "distance_km": 8.05,
-      "distance_miles": 5.0,
-      "event_id": "dh-003",
-      "occurred_at": "2026-10-17T22:10:00Z",
+    "hold_until": "2026-10-17T22:40:00+00:00",
+    "last_strike": {
+      "occurred_at": "2026-10-17T22:10:00+00:00",
       "source": "simulated-replay"
     },
     "seconds_remaining": 1200,

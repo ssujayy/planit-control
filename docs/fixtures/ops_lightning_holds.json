@@ -1,11 +1,12 @@
 {
   "fixture": true,
   "http_status": 200,
-  "as_of": "2026-10-17T22:20:00Z",
+  "as_of": "2026-10-17T22:20:00+00:00",
   "count": 3,
   "coverage": {
-    "last_event_received_at": "2026-10-17T22:20:00Z",
-    "last_feed_check_at": "2026-10-17T22:20:00Z",
+    "feed_connected": true,
+    "last_event_received_at": "2026-10-17T22:20:00+00:00",
+    "last_feed_check_at": "2026-10-17T22:20:00+00:00",
     "note": "Simulated replay. Not real lightning data.",
     "source": "simulated replay script",
     "status": "COMPLETE"
@@ -15,12 +16,9 @@
   "holds": [
     {
       "hold_active": true,
-      "hold_until": "2026-10-17T22:45:00Z",
-      "last_qualifying_strike": {
-        "distance_km": 4.83,
-        "distance_miles": 3.0,
-        "event_id": "ht-001",
-        "occurred_at": "2026-10-17T22:15:00Z",
+      "hold_until": "2026-10-17T22:45:00+00:00",
+      "last_strike": {
+        "occurred_at": "2026-10-17T22:15:00+00:00",
         "source": "simulated-replay"
       },
       "seconds_remaining": 1500,
@@ -29,12 +27,9 @@
     },
     {
       "hold_active": true,
-      "hold_until": "2026-10-17T22:40:00Z",
-      "last_qualifying_strike": {
-        "distance_km": 8.05,
-        "distance_miles": 5.0,
-        "event_id": "dh-003",
-        "occurred_at": "2026-10-17T22:10:00Z",
+      "hold_until": "2026-10-17T22:40:00+00:00",
+      "last_strike": {
+        "occurred_at": "2026-10-17T22:10:00+00:00",
         "source": "simulated-replay"
       },
       "seconds_remaining": 1200,
@@ -43,12 +38,9 @@
     },
     {
       "hold_active": true,
-      "hold_until": "2026-10-17T22:35:00Z",
-      "last_qualifying_strike": {
-        "distance_km": 9.66,
-        "distance_miles": 6.0,
-        "event_id": "gg-001",
-        "occurred_at": "2026-10-17T22:05:00Z",
+      "hold_until": "2026-10-17T22:35:00+00:00",
+      "last_strike": {
+        "occurred_at": "2026-10-17T22:05:00+00:00",
         "source": "simulated-replay"
       },
       "seconds_remaining": 900,

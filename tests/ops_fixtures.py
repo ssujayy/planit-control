@@ -42,7 +42,7 @@ def build_responses(make_client):
         site_form, category='wildlife', note='Alligator seen near the north culvert.', photo=(io.BytesIO(PNG), 'gator.png'))))
     clock.set('2026-10-17T22:03:00+00:00')
     mud = client.post('/api/reports', content_type='multipart/form-data',
-                      data=dict(site_form, category='mud', note='Access road rutted at gate 2.')).get_json()['report']
+                      data=dict(site_form, category='access', note='Access road rutted at gate 2.', photo=(io.BytesIO(PNG), 'gate.png'))).get_json()['report']
     clock.set('2026-10-17T22:04:00+00:00')
     keep('ops_report_resolved', client.post(f"/api/reports/{mud['id']}/resolve"))
     keep('ops_reports', client.get('/api/reports?site_id=663'))
@@ -61,7 +61,7 @@ def build_responses(make_client):
         'not_found_404': client.get('/api/reports?site_id=9999999'),
         'live_briefing_not_due_409': None,
         'photo_too_large_413': client.post('/api/reports', content_type='multipart/form-data', data=dict(
-            site_form, category='other', photo=(io.BytesIO(b'\xff\xd8\xff' + b'\x00' * (5 * 1024 * 1024)), 'big.jpg'))),
+            site_form, category='other', note='Large photo', photo=(io.BytesIO(b'\xff\xd8\xff' + b'\x00' * (5 * 1024 * 1024)), 'big.jpg'))),
     }
     clock.set('2026-10-17T22:30:00+00:00')  # 5:30 PM CDT
     errors['live_briefing_not_due_409'] = client.post('/api/briefings/generate', json={'site_id': 6072, 'event_mode': 'live'})
@@ -89,7 +89,7 @@ if __name__ == '__main__':
 
     def make(store, clock):
         app = backend.app.create_app()
-        app.config.update(OPS_STORE=store, OPS_CLOCK=clock)
+        app.config.update(OPS_STORE=store, OPS_CLOCK=clock, OPS_OUTLOOK=lambda now: None)
         return app.test_client()
 
     write_fixtures(build_responses(make))

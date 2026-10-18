@@ -8,7 +8,7 @@ from datetime import date, time, timedelta
 from zoneinfo import ZoneInfo
 
 from .lightning import LiveSource, coverage
-from .ops_common import iso, mode_label, parse_iso
+from .ops_common import iso, mode_label, parse_iso, utc_now
 from .reports import report_view
 
 DELIVERY_TIME = time(18, 0)
@@ -21,7 +21,11 @@ FORECAST_LABELS = {
     'precipitation_sum': 'Total precipitation',
     'precipitation_probability_max': 'Maximum precipitation probability',
     'wind_gusts_10m_max': 'Maximum wind gust',
+    'heat_index_max_f': 'Maximum heat index (derived from the modeled forecast with the NWS formula; not an official NWS value)',
+    'precipitation_sum_mm': 'Total precipitation',
+    'soil_moisture_max_m3_m3': 'Maximum shallow soil moisture (modeled; not a trafficability measurement)',
 }
+PLANNING_UNITS = {'heat_index_max_f': '°F', 'precipitation_sum_mm': 'mm', 'soil_moisture_max_m3_m3': 'm³/m³'}
 NOTE = ('Generated from supplied facts only. Forecasts, official alerts, crew reports and the experimental '
         'model index are different kinds of evidence. Missing inputs are listed, not filled in.')
 
@@ -71,9 +75,9 @@ def _evidence_section(site, inputs, missing):
     alerts = inputs.get('active_alerts')
     if alerts is None:
         missing.append('official alerts')
-        lines.append('Official alerts: not yet integrated. The absence of alerts here is not evidence that no warnings exist.')
+        lines.append('Official alerts: unavailable. The absence of alerts here is not evidence that no warnings exist.')
     elif not alerts:
-        lines.append('Official alerts: none active in the ingested official alert data.')
+        lines.append(f"Official alerts: none active in the ingested official alert data (monitoring {inputs.get('alerts_monitoring') or 'state unknown'}).")
     else:
         for alert in alerts:
             lines.append(f"Official alert: {alert.get('event')} ({alert.get('source') or 'official source'}), "
@@ -112,7 +116,7 @@ def _model_section(inputs, target, missing):
     if model is None:
         missing.append('model index')
         return {'key': 'model', 'title': title, 'evidence_type': 'experimental_model_index', 'available': False,
-                'lines': ['Experimental model index: not yet integrated.']}
+                'lines': ['Experimental model index: unavailable (no saved prediction for the target date).']}
     if model.get('model_index') is None:
         missing.append('model index')
         reason = model.get('reason') or model.get('note') or 'no reason given'
@@ -163,36 +167,65 @@ def generate_briefing(site, delivery_local_date, inputs, event_mode, now, trigge
 
 
 def deliver_briefing(store, site, delivery_local_date, inputs, event_mode, now, trigger='scheduled', rewriter=None):
-    """Idempotent: returns (briefing, created). A second call for the same key creates nothing."""
+    """Idempotent: returns (briefing, created). The briefings table allows one row per site/mode/local date."""
     delivery = _as_date(delivery_local_date).isoformat()
     existing = store.get_briefing(site['id'], delivery, event_mode)
     if existing:
         return existing, False
-    briefing = generate_briefing(site, delivery, inputs, event_mode, now, trigger, rewriter)
-    created = store.insert_briefing(briefing)
-    if created:
-        store.add_event({
-            'id': f"{event_mode}:briefing:{site['id']}:{delivery}", 'site_id': site['id'], 'type': 'briefing_delivered',
-            'occurred_at': now, 'source': 'planit-control briefing generator', 'event_mode': event_mode,
-            'summary': f"{'Simulated replay: ' if event_mode == 'replay' else ''}Next-day briefing delivered for "
-                       f"{briefing['forecast_target_date']} (forecast target date).",
-            'details': {'briefing_id': briefing['id'], 'delivery_local_date': delivery,
-                        'forecast_target_date': briefing['forecast_target_date'], 'trigger': trigger,
-                        'missing_inputs': briefing['missing_inputs']}})
+    _, created = store.save_briefing(generate_briefing(site, delivery, inputs, event_mode, now, trigger, rewriter))
     return store.get_briefing(site['id'], delivery, event_mode), created
 
 
-def store_inputs_provider(store, live_source=None, replay_session=None):
-    """Inputs from Workstream B's own data. Forecast, official alerts and model stay None until A/C supply them."""
+def _outlook_facts(row):
+    """Map one A Outlook row (serialized) to briefing inputs. Absent values stay None (shown as unavailable)."""
+    if row is None:
+        return {}
+    facts = {}
+    planning, weather = row.get('planning_weather') or {}, row.get('weather') or {}
+    if weather:
+        facts['forecast'] = {
+            'source': planning.get('source'), 'valid_date': planning.get('target_date'), 'retrieved_at': weather.get('fetched_at'),
+            'values': {key: {'value': planning.get(key), 'unit': unit} for key, unit in PLANNING_UNITS.items()}}
+    monitoring = (row.get('official_alerts_monitoring') or {}).get('state')
+    if monitoring in ('COMPLETE', 'STALE') and row.get('alerts') is not None:
+        facts['active_alerts'] = [{'event': a.get('event'), 'source': 'NWS', 'expires': a.get('expires')} for a in row['alerts']]
+        facts['alerts_monitoring'] = monitoring
+    prediction = row.get('prediction')
+    if prediction:
+        provenance = prediction.get('provenance') or {}
+        facts['model'] = {'model_index': prediction.get('score'), 'target_date': prediction.get('valid_date'),
+                          'model_version': prediction.get('model_version'),
+                          'outside_training_range': provenance.get('outside_training_range') or [],
+                          'outside_training_counties': provenance.get('outside_training_counties')}
+    return facts
+
+
+def store_inputs_provider(store, live_source=None, replay_session=None, outlook=None):
+    """Lightning and reports from the shared store; forecast, official alerts and model from A's Outlook rows.
+
+    outlook is a callable(now) returning build_outlook('live')-style rows, loaded at most once. Missing facts stay None.
+    """
+    cache = {}
+
+    def outlook_row(site_id, now):
+        if outlook is None:
+            return None
+        if 'rows' not in cache:
+            result = outlook(now)
+            cache['rows'] = {r['site']['id']: r for r in (result or {}).get('sites', [])}
+        return cache['rows'].get(site_id)
+
     def provider(site, delivery_local_date, event_mode, now):
         day = _as_date(delivery_local_date)
         holds = [e for e in store.list_events(site['id'], event_mode)
                  if e['type'] in HOLD_TYPES and site_local(site, e['occurred_at']).date() == day]
         # Crew reports are always real (event_mode "live"); replay briefings read them without changing them.
-        unresolved = [report_view(r) for r in store.list_reports(site['id'], 'live') if r['status'] == 'unresolved']
-        return {'forecast': None, 'active_alerts': None, 'model': None, 'lightning_today': holds,
-                'lightning_coverage': coverage(store, event_mode, now, live_source or LiveSource(), replay_session),
-                'unresolved_reports': unresolved, 'reports_are_live_in_replay': event_mode == 'replay'}
+        unresolved = [report_view(r, site) for r in store.list_reports(site['id'], 'live', unresolved_only=True)]
+        inputs = {'forecast': None, 'active_alerts': None, 'model': None, 'lightning_today': holds,
+                  'lightning_coverage': coverage(store, event_mode, now, live_source or LiveSource(), replay_session),
+                  'unresolved_reports': unresolved, 'reports_are_live_in_replay': event_mode == 'replay'}
+        inputs.update(_outlook_facts(outlook_row(site['id'], now)))
+        return inputs
     return provider
 
 
@@ -201,12 +234,32 @@ def run_due_briefings(now, store, sites=None, inputs_provider=None, event_mode='
     results = []
     with store.batch():
         sites = sites if sites is not None else store.list_sites()
+        due = [(site, due_date(site, now)) for site in sites]
+        due = [(site, day) for site, day in due if day is not None]
+        if not due:
+            return results
+        existing = {(b['site_id'], b['delivery_local_date']) for b in store.list_briefings(None, event_mode)}
         provider = inputs_provider or store_inputs_provider(store)
-        for site in sites:
-            delivery = due_date(site, now)
-            if delivery is None or store.get_briefing(site['id'], delivery.isoformat(), event_mode):
+        for site, day in due:
+            if (site['id'], day.isoformat()) in existing:
                 continue
-            inputs = provider(site, delivery, event_mode, now)
-            briefing, created = deliver_briefing(store, site, delivery, inputs, event_mode, now, 'scheduled', rewriter)
+            inputs = provider(site, day, event_mode, now)
+            briefing, created = deliver_briefing(store, site, day, inputs, event_mode, now, 'scheduled', rewriter)
             results.append({'site_id': site['id'], 'delivery_local_date': briefing['delivery_local_date'], 'created': created})
     return results
+
+
+def scheduled_briefings():
+    """Worker callback (no arguments): live briefings for every site whose local 6 PM has passed."""
+    from .ops_store import PostgresStore
+    from .outlook import build_outlook
+    store, now = PostgresStore(), utc_now()
+    provider = store_inputs_provider(store, outlook=lambda at: build_outlook('live', now=at))
+    results = run_due_briefings(now, store, inputs_provider=provider)
+    return {'created': sum(r['created'] for r in results), 'attempted': len(results)}
+
+
+def worker_jobs():
+    """Register with A's single worker: python -m backend.worker --job-module backend.briefings:worker_jobs"""
+    from .worker import Job
+    return [Job('briefings', scheduled_briefings, 30)]

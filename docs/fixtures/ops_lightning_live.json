@@ -1,9 +1,10 @@
 {
   "fixture": true,
   "http_status": 200,
-  "as_of": "2026-10-17T22:00:00Z",
+  "as_of": "2026-10-17T22:00:00+00:00",
   "clock": "server",
   "coverage": {
+    "feed_connected": false,
     "last_event_received_at": null,
     "last_feed_check_at": null,
     "note": "No live lightning feed is connected. The absence of a hold is not evidence of no strikes.",
@@ -14,7 +15,7 @@
   "hazard": {
     "hold_active": false,
     "hold_until": null,
-    "last_qualifying_strike": null,
+    "last_strike": null,
     "seconds_remaining": 0,
     "site_id": 663,
     "site_name": "Deerhaven Generating Station",

@@ -26,7 +26,7 @@
     "status": 413,
     "body": {
       "code": "photo_too_large",
-      "error": "photo must be 5 MB or smaller"
+      "error": "photo must be 5 MiB or smaller"
     }
   },
   "database_unavailable_503": {

@@ -3,7 +3,7 @@
   "http_status": 200,
   "examples": {
     "replay": {
-      "as_of": "2026-10-17T23:20:00Z",
+      "as_of": "2026-10-17T23:20:00+00:00",
       "count": 8,
       "event_mode": "replay",
       "events": [
@@ -11,13 +11,22 @@
           "details": {
             "distance_km": 14.48,
             "distance_miles": 9.0,
-            "hold_until": "2026-10-17T22:30:00Z",
-            "previous_hold_until": null,
-            "strike_event_id": "dh-001"
+            "hold_until": "2026-10-17T22:30:00+00:00",
+            "lightning_hold": {
+              "event_mode": "replay",
+              "site_id": 663
+            },
+            "previous_hold_until": null
           },
           "event_mode": "replay",
           "id": "replay:simulated-replay:dh-001:663",
-          "occurred_at": "2026-10-17T22:00:00Z",
+          "occurred_at": "2026-10-17T22:00:00+00:00",
+          "ref_key": {
+            "event_id": "dh-001",
+            "event_mode": "replay",
+            "source": "simulated-replay"
+          },
+          "ref_table": "lightning_events",
           "site_id": 663,
           "source": "simulated-replay",
           "summary": "Simulated replay: Strike 9.0 mi from site started a 30-minute lightning stop-work hold.",
@@ -27,12 +36,15 @@
           "details": {
             "category": "wildlife",
             "has_photo": true,
-            "location_flag": null,
-            "report_id": "a20a5dcadc94457199df16f43de688f6"
+            "report_id": "b5de736f-e56d-46e0-be9d-dc59d5bc8190"
           },
           "event_mode": "live",
-          "id": "live:report:a20a5dcadc94457199df16f43de688f6:created",
-          "occurred_at": "2026-10-17T22:02:00Z",
+          "id": "live:report:b5de736f-e56d-46e0-be9d-dc59d5bc8190:created",
+          "occurred_at": "2026-10-17T22:02:00+00:00",
+          "ref_key": {
+            "id": "b5de736f-e56d-46e0-be9d-dc59d5bc8190"
+          },
+          "ref_table": "crew_reports",
           "site_id": 663,
           "source": "crew_report",
           "summary": "Crew report (wildlife) with photo: Alligator seen near the north culvert.",
@@ -40,45 +52,60 @@
         },
         {
           "details": {
-            "category": "mud",
-            "has_photo": false,
-            "location_flag": null,
-            "report_id": "85f61b593b4f4f8d9a3796794f36aecd"
+            "category": "access",
+            "has_photo": true,
+            "report_id": "cf9c5b30-1067-411c-b03f-65c04c16b8a7"
           },
           "event_mode": "live",
-          "id": "live:report:85f61b593b4f4f8d9a3796794f36aecd:created",
-          "occurred_at": "2026-10-17T22:03:00Z",
+          "id": "live:report:cf9c5b30-1067-411c-b03f-65c04c16b8a7:created",
+          "occurred_at": "2026-10-17T22:03:00+00:00",
+          "ref_key": {
+            "id": "cf9c5b30-1067-411c-b03f-65c04c16b8a7"
+          },
+          "ref_table": "crew_reports",
           "site_id": 663,
           "source": "crew_report",
-          "summary": "Crew report (mud): Access road rutted at gate 2.",
+          "summary": "Crew report (access) with photo: Access road rutted at gate 2.",
           "type": "report_created"
         },
         {
           "details": {
-            "category": "mud",
-            "has_photo": false,
-            "location_flag": null,
-            "report_id": "85f61b593b4f4f8d9a3796794f36aecd"
+            "category": "access",
+            "has_photo": true,
+            "report_id": "cf9c5b30-1067-411c-b03f-65c04c16b8a7"
           },
           "event_mode": "live",
-          "id": "live:report:85f61b593b4f4f8d9a3796794f36aecd:resolved",
-          "occurred_at": "2026-10-17T22:04:00Z",
+          "id": "live:report:cf9c5b30-1067-411c-b03f-65c04c16b8a7:resolved",
+          "occurred_at": "2026-10-17T22:04:00+00:00",
+          "ref_key": {
+            "id": "cf9c5b30-1067-411c-b03f-65c04c16b8a7"
+          },
+          "ref_table": "crew_reports",
           "site_id": 663,
           "source": "crew_report",
-          "summary": "Crew report (mud) marked resolved; it stays in site history.",
+          "summary": "Crew report (access) marked resolved; it stays in site history.",
           "type": "report_resolved"
         },
         {
           "details": {
             "distance_km": 8.05,
             "distance_miles": 5.0,
-            "hold_until": "2026-10-17T22:40:00Z",
-            "previous_hold_until": "2026-10-17T22:30:00Z",
-            "strike_event_id": "dh-003"
+            "hold_until": "2026-10-17T22:40:00+00:00",
+            "lightning_hold": {
+              "event_mode": "replay",
+              "site_id": 663
+            },
+            "previous_hold_until": "2026-10-17T22:30:00+00:00"
           },
           "event_mode": "replay",
           "id": "replay:simulated-replay:dh-003:663",
-          "occurred_at": "2026-10-17T22:10:00Z",
+          "occurred_at": "2026-10-17T22:10:00+00:00",
+          "ref_key": {
+            "event_id": "dh-003",
+            "event_mode": "replay",
+            "source": "simulated-replay"
+          },
+          "ref_table": "lightning_events",
           "site_id": 663,
           "source": "simulated-replay",
           "summary": "Simulated replay: Strike 5.0 mi from site extended the lightning stop-work hold.",
@@ -88,13 +115,22 @@
           "details": {
             "distance_km": 3.22,
             "distance_miles": 2.0,
-            "hold_until": "2026-10-17T22:50:00Z",
-            "previous_hold_until": "2026-10-17T22:40:00Z",
-            "strike_event_id": "demo-manual-001"
+            "hold_until": "2026-10-17T22:50:00+00:00",
+            "lightning_hold": {
+              "event_mode": "replay",
+              "site_id": 663
+            },
+            "previous_hold_until": "2026-10-17T22:40:00+00:00"
           },
           "event_mode": "replay",
           "id": "replay:simulated-replay:demo-manual-001:663",
-          "occurred_at": "2026-10-17T22:20:00Z",
+          "occurred_at": "2026-10-17T22:20:00+00:00",
+          "ref_key": {
+            "event_id": "demo-manual-001",
+            "event_mode": "replay",
+            "source": "simulated-replay"
+          },
+          "ref_table": "lightning_events",
           "site_id": 663,
           "source": "simulated-replay",
           "summary": "Simulated replay: Strike 2.0 mi from site extended the lightning stop-work hold.",
@@ -103,11 +139,16 @@
         {
           "details": {
             "clears_only": "lightning_hold",
-            "hold_until": "2026-10-17T22:50:00Z"
+            "hold_until": "2026-10-17T22:50:00+00:00"
           },
           "event_mode": "replay",
-          "id": "replay:hold-expired:663:2026-10-17T22:50:00Z",
-          "occurred_at": "2026-10-17T22:50:00Z",
+          "id": "replay:hold-expired:663:2026-10-17T22:50:00+00:00",
+          "occurred_at": "2026-10-17T22:50:00+00:00",
+          "ref_key": {
+            "event_mode": "replay",
+            "site_id": 663
+          },
+          "ref_table": "lightning_holds",
           "site_id": 663,
           "source": "planit-control (computed from hold_until)",
           "summary": "Simulated replay: Lightning hold countdown ended. Only the lightning hold is lifted; other hazards and lightning feed coverage are unchanged.",
@@ -115,7 +156,7 @@
         },
         {
           "details": {
-            "briefing_id": "replay:663:2026-10-17",
+            "briefing_id": "7de41ed6-a444-4511-a20d-5008599a6d9e",
             "delivery_local_date": "2026-10-17",
             "forecast_target_date": "2026-10-18",
             "missing_inputs": [
@@ -126,8 +167,12 @@
             "trigger": "manual"
           },
           "event_mode": "replay",
-          "id": "replay:briefing:663:2026-10-17",
-          "occurred_at": "2026-10-17T23:20:00Z",
+          "id": "replay:briefing:7de41ed6-a444-4511-a20d-5008599a6d9e",
+          "occurred_at": "2026-10-17T23:20:00+00:00",
+          "ref_key": {
+            "id": "7de41ed6-a444-4511-a20d-5008599a6d9e"
+          },
+          "ref_table": "briefings",
           "site_id": 663,
           "source": "planit-control briefing generator",
           "summary": "Simulated replay: Next-day briefing delivered for 2026-10-18 (forecast target date).",
@@ -143,7 +188,7 @@
       "site_id": 663
     },
     "live": {
-      "as_of": "2026-10-17T22:08:00Z",
+      "as_of": "2026-10-17T22:08:00+00:00",
       "count": 4,
       "event_mode": "live",
       "events": [
@@ -151,12 +196,15 @@
           "details": {
             "category": "wildlife",
             "has_photo": true,
-            "location_flag": null,
-            "report_id": "a20a5dcadc94457199df16f43de688f6"
+            "report_id": "b5de736f-e56d-46e0-be9d-dc59d5bc8190"
           },
           "event_mode": "live",
-          "id": "live:report:a20a5dcadc94457199df16f43de688f6:created",
-          "occurred_at": "2026-10-17T22:02:00Z",
+          "id": "live:report:b5de736f-e56d-46e0-be9d-dc59d5bc8190:created",
+          "occurred_at": "2026-10-17T22:02:00+00:00",
+          "ref_key": {
+            "id": "b5de736f-e56d-46e0-be9d-dc59d5bc8190"
+          },
+          "ref_table": "crew_reports",
           "site_id": 663,
           "source": "crew_report",
           "summary": "Crew report (wildlife) with photo: Alligator seen near the north culvert.",
@@ -164,37 +212,43 @@
         },
         {
           "details": {
-            "category": "mud",
-            "has_photo": false,
-            "location_flag": null,
-            "report_id": "85f61b593b4f4f8d9a3796794f36aecd"
+            "category": "access",
+            "has_photo": true,
+            "report_id": "cf9c5b30-1067-411c-b03f-65c04c16b8a7"
           },
           "event_mode": "live",
-          "id": "live:report:85f61b593b4f4f8d9a3796794f36aecd:created",
-          "occurred_at": "2026-10-17T22:03:00Z",
+          "id": "live:report:cf9c5b30-1067-411c-b03f-65c04c16b8a7:created",
+          "occurred_at": "2026-10-17T22:03:00+00:00",
+          "ref_key": {
+            "id": "cf9c5b30-1067-411c-b03f-65c04c16b8a7"
+          },
+          "ref_table": "crew_reports",
           "site_id": 663,
           "source": "crew_report",
-          "summary": "Crew report (mud): Access road rutted at gate 2.",
+          "summary": "Crew report (access) with photo: Access road rutted at gate 2.",
           "type": "report_created"
         },
         {
           "details": {
-            "category": "mud",
-            "has_photo": false,
-            "location_flag": null,
-            "report_id": "85f61b593b4f4f8d9a3796794f36aecd"
+            "category": "access",
+            "has_photo": true,
+            "report_id": "cf9c5b30-1067-411c-b03f-65c04c16b8a7"
           },
           "event_mode": "live",
-          "id": "live:report:85f61b593b4f4f8d9a3796794f36aecd:resolved",
-          "occurred_at": "2026-10-17T22:04:00Z",
+          "id": "live:report:cf9c5b30-1067-411c-b03f-65c04c16b8a7:resolved",
+          "occurred_at": "2026-10-17T22:04:00+00:00",
+          "ref_key": {
+            "id": "cf9c5b30-1067-411c-b03f-65c04c16b8a7"
+          },
+          "ref_table": "crew_reports",
           "site_id": 663,
           "source": "crew_report",
-          "summary": "Crew report (mud) marked resolved; it stays in site history.",
+          "summary": "Crew report (access) marked resolved; it stays in site history.",
           "type": "report_resolved"
         },
         {
           "details": {
-            "briefing_id": "live:663:2026-10-17",
+            "briefing_id": "02e5d219-187d-498c-b711-28d25c96b027",
             "delivery_local_date": "2026-10-17",
             "forecast_target_date": "2026-10-18",
             "missing_inputs": [
@@ -206,8 +260,12 @@
             "trigger": "manual"
           },
           "event_mode": "live",
-          "id": "live:briefing:663:2026-10-17",
-          "occurred_at": "2026-10-17T22:08:00Z",
+          "id": "live:briefing:02e5d219-187d-498c-b711-28d25c96b027",
+          "occurred_at": "2026-10-17T22:08:00+00:00",
+          "ref_key": {
+            "id": "02e5d219-187d-498c-b711-28d25c96b027"
+          },
+          "ref_table": "briefings",
           "site_id": 663,
           "source": "planit-control briefing generator",
           "summary": "Next-day briefing delivered for 2026-10-18 (forecast target date).",
@@ -222,7 +280,7 @@
       "site_id": 663
     },
     "empty": {
-      "as_of": "2026-10-17T22:08:00Z",
+      "as_of": "2026-10-17T22:08:00+00:00",
       "count": 0,
       "event_mode": "live",
       "events": [],

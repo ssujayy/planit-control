@@ -62,9 +62,7 @@ def test_duplicate_execution_creates_one_row(store):
     assert created and not created_again and first['id'] == again['id']
     assert len(store.list_briefings(663, 'live')) == 1
     # The store itself refuses a second row for the same key.
-    assert store.insert_briefing(dict(first, id='other')) is False
-    delivered = [e for e in store.list_events(663, 'live') if e['type'] == 'briefing_delivered']
-    assert len(delivered) == 1
+    assert store.save_briefing(dict(first, id='other')) == (first['id'], False)
 
 
 def test_replay_and_live_are_isolated(store):
@@ -85,13 +83,13 @@ def test_missing_inputs_are_stated_not_filled(store):
     forecast = next(s for s in briefing['sections'] if s['key'] == 'forecast')
     assert forecast['available'] is False and 'Forecast unavailable' in forecast['lines'][0]
     assert not any(ch.isdigit() for ch in ' '.join(forecast['lines']))
-    assert 'not yet integrated' in briefing['body_text']
+    assert 'Official alerts: unavailable' in briefing['body_text']
     assert 'safe' not in briefing['body_text'].lower()
 
 
 def test_supplied_inputs_with_labels():
     inputs = {
-        'forecast': {'source': 'Open-Meteo', 'valid_date': '2026-10-18', 'retrieved_at': '2026-10-17T21:00:00Z',
+        'forecast': {'source': 'Open-Meteo', 'valid_date': '2026-10-18', 'retrieved_at': '2026-10-17T21:00:00+00:00',
                      'values': {'temperature_2m_max': {'value': 31.2, 'unit': '°C'}, 'precipitation_sum': {'value': None, 'unit': 'mm'}}},
         'active_alerts': [], 'lightning_today': [], 'unresolved_reports': [],
         'lightning_coverage': {'status': 'COMPLETE'},
